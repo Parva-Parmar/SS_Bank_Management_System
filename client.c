@@ -81,22 +81,23 @@ int main() {
             showLoginMenu();
             scanf("%d", &role_choice);
             getchar();
-            if (role_choice == 5) {
-                continue;
-            }
+            if (role_choice == 5) continue;
             if (role_choice < 1 || role_choice > 5) {
                 printf("Invalid choice.\n");
                 continue;
             }
+
             char username[64], password[64];
             printf("Enter Username: ");
             fgets(username, sizeof(username), stdin);
             username[strcspn(username, "\n")] = 0;
             trim(username);
+
             printf("Enter Password: ");
             fgets(password, sizeof(password), stdin);
             password[strcspn(password, "\n")] = 0;
             trim(password);
+
             sprintf(buffer, "login|%s|%s|%s", roles[role_choice - 1], username, password);
             send(sock, buffer, strlen(buffer), 0);
 
@@ -107,8 +108,7 @@ int main() {
             if (strstr(buffer, "Login successful.") && role_choice == 4) {
                 while (1) {
                     valread = read(sock, buffer, 1024);
-                    if (valread <= 0)
-                        break;
+                    if (valread <= 0) break;
                     buffer[valread] = '\0';
                     printf("%s", buffer);
 
@@ -120,54 +120,127 @@ int main() {
                     sprintf(cmd, "%d", cust_choice);
                     send(sock, cmd, strlen(cmd), 0);
 
-                    if (cust_choice == 2) {
+                    if (cust_choice == 2 || cust_choice == 3) { // Deposit or Withdraw
                         valread = read(sock, buffer, 1024);
                         buffer[valread] = '\0';
                         printf("%s", buffer);
-                        float deposit_amount;
-                        scanf("%f", &deposit_amount);
+
+                        if (cust_choice == 2)
+                            printf("Enter deposit amount: ");
+                        else
+                            printf("Enter withdrawal amount: ");
+
+                        float amount;
+                        scanf("%f", &amount);
                         getchar();
 
                         char amount_str[32];
-                        snprintf(amount_str, sizeof(amount_str), "%.2f", deposit_amount);
+                        snprintf(amount_str, sizeof(amount_str), "%.2f", amount);
                         send(sock, amount_str, strlen(amount_str), 0);
 
                         valread = read(sock, buffer, 1024);
                         buffer[valread] = '\0';
                         printf("%s", buffer);
-                    } else {
+
+                    } else if (cust_choice == 4) { // Transfer Funds
+                        // Prompt recipient username
                         valread = read(sock, buffer, 1024);
-                        if (valread <= 0)
-                            break;
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+
+                        char recipient[64];
+                        fgets(recipient, sizeof(recipient), stdin);
+                        recipient[strcspn(recipient, "\n")] = 0;
+                        send(sock, recipient, strlen(recipient), 0);
+
+                        // Prompt amount
+                        valread = read(sock, buffer, 1024);
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+
+                        float transfer_amount;
+                        scanf("%f", &transfer_amount);
+                        getchar();
+                        char amount_str[32];
+                        snprintf(amount_str, sizeof(amount_str), "%.2f", transfer_amount);
+                        send(sock, amount_str, strlen(amount_str), 0);
+
+                        // Read response
+                        valread = read(sock, buffer, 1024);
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+
+                    } else if (cust_choice == 5) {
+                        // Wait for server prompt
+                        valread = read(sock, buffer, 1024);
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+
+                        // Read loan amount from user and send to server
+                        float loan_amount;
+                        scanf("%f", &loan_amount);
+                        getchar();
+
+                        char loan_str[32];
+                        snprintf(loan_str, sizeof(loan_str), "%.2f", loan_amount);
+                        send(sock, loan_str, strlen(loan_str), 0);
+
+                        // Read and print server response
+                        valread = read(sock, buffer, 1024);
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+                    }
+                    else if (cust_choice == 6) {  // Change Password
+                        // Wait for server prompt
+                        valread = read(sock, buffer, 1024);
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+
+                        // Input new password
+                        char new_password[64];
+                        fgets(new_password, sizeof(new_password), stdin);
+                        new_password[strcspn(new_password, "\n")] = 0;  // Remove newline
+
+                        // Send new password to server
+                        send(sock, new_password, strlen(new_password), 0);
+
+                        // Receive confirmation message and print
+                        valread = read(sock, buffer, 1024);
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+                    }
+                    else {
+                        valread = read(sock, buffer, 1024);
+                        if (valread <= 0) break;
                         buffer[valread] = '\0';
                         printf("%s", buffer);
                     }
 
-                    if (cust_choice == 9 || cust_choice == 10) {
+                    if (cust_choice == 9 || cust_choice == 10)
                         break;
-                    }
                 }
             }
         } else if (main_choice == 2) {
             showSignupMenu();
             scanf("%d", &role_choice);
             getchar();
-            if (role_choice == 3) {
-                continue;
-            }
+            if (role_choice == 3) continue;
             if (role_choice < 1 || role_choice > 3) {
                 printf("Invalid choice.\n");
                 continue;
             }
+
             char username[64], password[64];
             printf("Enter Username: ");
             fgets(username, sizeof(username), stdin);
             username[strcspn(username, "\n")] = 0;
             trim(username);
+
             printf("Enter Password: ");
             fgets(password, sizeof(password), stdin);
             password[strcspn(password, "\n")] = 0;
             trim(password);
+
             sprintf(buffer, "signup|%s|%s|%s", roles[role_choice], username, password);
             send(sock, buffer, strlen(buffer), 0);
 
@@ -176,7 +249,6 @@ int main() {
             printf("Server: %s\n", buffer);
         } else {
             printf("Invalid menu choice.\n");
-            continue;
         }
     }
     close(sock);

@@ -1,2 +1,3 @@
 employee|Keyur|keypad1234
-customer|Parva|parva123
+customer|Parva|parmar123
+ustomer|Aditya|aditya123

@@ -173,9 +173,181 @@ bool deposit_money(const char *username, float amount) {
 
 
 // Placeholder function definitions for the rest (you can implement similarly)
-bool withdraw_money(const char *username, float amount) { return false; }
-bool transfer_funds(const char *from_user, const char *to_user, float amount) { return false; }
-bool apply_for_loan(const char *username, float amount) { return false; }
-bool change_password(const char *username, const char *new_password) { return false; }
+bool withdraw_money(const char *username, float amount) {
+    if (amount <= 0) return false;
+
+    int fd;
+    FILE *fp = open_file_locked(CUSTOMER_DATA_FILE, "r+", &fd);
+    if (!fp) return false;
+    char line[256];
+    long pos = 0;
+    bool updated = false;
+
+    while (fgets(line, sizeof(line), fp)) {
+        char user[64], loan_status[32];
+        float balance;
+        sscanf(line, "%63[^|]|%f|%31[^\n]", user, &balance, loan_status);
+        trim(user);
+        if (strcmp(user, username) == 0) {
+            if (balance >= amount) {
+                balance -= amount;
+                fseek(fp, pos, SEEK_SET);
+                fprintf(fp, "%s|%.2f|%s\n", user, balance, loan_status);
+                fflush(fp);
+                updated = true;
+                close_file_locked(fp, fd);
+                log_transaction(username, "Withdraw", amount, "Withdrawal from account");
+                return true;
+            } else {
+                close_file_locked(fp, fd);
+                return false; // insufficient balance
+            }
+        }
+        pos = ftell(fp);
+    }
+    close_file_locked(fp, fd);
+    return false; // user not found or no sufficient balance
+}
+
+bool transfer_funds(const char *from_user, const char *to_user, float amount) {
+    if (amount <= 0) return false;
+
+    if (!customer_exists(to_user)) return false;
+
+    int fd;
+    FILE *fp = open_file_locked(CUSTOMER_DATA_FILE, "r+", &fd);
+    if (!fp) return false;
+
+    char lines[100][256];  // Adjust size as needed or use dynamic data structure
+    int count = 0;
+
+    // Read all customer data lines into memory
+    while (fgets(lines[count], sizeof(lines[count]), fp)) {
+        count++;
+        if (count >= 100) break;  // safety limit
+    }
+
+    int sender_idx = -1, receiver_idx = -1;
+    float sender_balance = 0.0f, receiver_balance = 0.0f;
+    char sender_loan[32], receiver_loan[32], user[64];
+
+    for (int i = 0; i < count; i++) {
+        sscanf(lines[i], "%63[^|]|%f|%31[^\n]", user, &sender_balance, sender_loan);
+        trim(user);
+        if (strcmp(user, from_user) == 0) {
+            sender_idx = i;
+        }
+        if (strcmp(user, to_user) == 0) {
+            receiver_idx = i;
+        }
+    }
+
+    if (sender_idx == -1 || receiver_idx == -1) {
+        close_file_locked(fp, fd);
+        return false;  // sender or receiver not found
+    }
+
+    // Parse balances to update
+    sscanf(lines[sender_idx], "%63[^|]|%f|%31[^\n]", user, &sender_balance, sender_loan);
+    sscanf(lines[receiver_idx], "%63[^|]|%f|%31[^\n]", user, &receiver_balance, receiver_loan);
+
+    if (sender_balance < amount) {
+        close_file_locked(fp, fd);
+        return false;  // insufficient funds
+    }
+
+    // Adjust balances
+    sender_balance -= amount;
+    receiver_balance += amount;
+
+    // Update lines with new balances
+    snprintf(lines[sender_idx], sizeof(lines[sender_idx]), "%s|%.2f|%s\n", from_user, sender_balance, sender_loan);
+    snprintf(lines[receiver_idx], sizeof(lines[receiver_idx]), "%s|%.2f|%s\n", to_user, receiver_balance, receiver_loan);
+
+    // Rewind file and write all lines back
+    fseek(fp, 0, SEEK_SET);
+    for (int i = 0; i < count; i++) {
+        fputs(lines[i], fp);
+    }
+    fflush(fp);
+    ftruncate(fd, ftell(fp));  // truncate file to current length
+
+    close_file_locked(fp, fd);
+
+    // Log transactions for sender and receiver
+    log_transaction(from_user, "Transfer Out", amount, to_user);
+    log_transaction(to_user, "Transfer In", amount, from_user);
+
+    return true;
+}
+
+
+bool apply_for_loan(const char *username, float loan_amount) {
+    if (loan_amount <= 0) return false;
+
+    int fd;
+    FILE *fp = open_file_locked(CUSTOMER_DATA_FILE, "r+", &fd);
+    if (!fp) return false;
+
+    char line[256];
+    long pos = 0;
+    bool updated = false;
+
+    while (fgets(line, sizeof(line), fp)) {
+        char user[64], loan_status[32];
+        float balance;
+        sscanf(line, "%63[^|]|%f|%31[^\n]", user, &balance, loan_status);
+        trim(user);
+
+        if (strcmp(user, username) == 0) {
+            if (strcmp(loan_status, "NO_LOAN") != 0) {
+                // user has an existing or pending loan
+                close_file_locked(fp, fd);
+                return false;
+            }
+            // Update loan status with pending loan amount
+            snprintf(loan_status, sizeof(loan_status), "PENDING_LOAN_%.2f", loan_amount);
+
+            fseek(fp, pos, SEEK_SET);
+            fprintf(fp, "%s|%.2f|%s\n", user, balance, loan_status);
+            fflush(fp);
+
+            updated = true;
+            log_transaction(username, "Loan Application", loan_amount, "Loan requested");
+            close_file_locked(fp, fd);
+            return true;
+        }
+        pos = ftell(fp);
+    }
+    close_file_locked(fp, fd);
+    return false;
+}
+
+bool change_password(const char *username, const char *new_password) {
+    int fd;
+    FILE *fp = open_file_locked("users.txt", "r+", &fd);
+    if (!fp) return false;
+
+    char line[256];
+    long pos = 0;
+    bool updated = false;
+    while (fgets(line, sizeof(line), fp)) {
+        char role[32], user[64], pass[64];
+        sscanf(line, "%31[^|]|%63[^|]|%63[^\n]", role, user, pass);
+        trim(user);
+        if (strcmp(user, username) == 0) {
+            fseek(fp, pos, SEEK_SET);
+            fprintf(fp, "%s|%s|%s\n", role, user, new_password);
+            fflush(fp);
+            updated = true;
+            log_transaction(username, "Password Change", 0.0f, "Changed password");
+            break;
+        }
+        pos = ftell(fp);
+    }
+    close_file_locked(fp, fd);
+    return updated;
+}
+
 bool add_feedback(const char *username, const char *feedback) { return false; }
 void view_transaction_history(const char *username, int sockfd) {}

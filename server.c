@@ -103,7 +103,7 @@ void handle_client(int new_socket) {
                             break;
                         }
                         case 2: {
-                            strcpy(response, "Enter deposit amount: ");
+                            strcpy(response, "Proceding to deposit money.\n");
                             send(new_socket, response, strlen(response), 0);
                             valread = read(new_socket, buffer, sizeof(buffer) - 1);
                             if (valread <= 0) break;
@@ -117,6 +117,100 @@ void handle_client(int new_socket) {
                                 strcpy(response, "Deposit failed.\n");
                             send(new_socket, response, strlen(response), 0);
                             write_server_log(client_ip, "Deposit Money", response);
+                            break;
+                        }
+                        case 3: { // Assuming 3 is withdrawal
+                            // send(new_socket, "Enter withdrawal amount: ", 25, 0);
+                            strcpy(response, "Proceding to withdraw money.\n");
+                            send(new_socket, response, strlen(response), 0);
+                            int amt_len = read(new_socket, buffer, sizeof(buffer) - 1);
+                            buffer[amt_len] = '\0';
+
+                            float amount = atof(buffer);
+                            bool res = withdraw_money(username, amount);
+                            if (res)
+                                strcpy(response, "Withdrawal successful.\n");
+                            else
+                                strcpy(response, "Withdrawal failed: insufficient funds.\n");
+
+                            send(new_socket, response, strlen(response), 0);
+                            write_server_log(client_ip, "Withdraw Money", response);
+                            break;
+                        }
+                        case 4: {  // Transfer Funds
+                            // Ask for recipient username
+                            char prompt[] = "Enter recipient username: ";
+                            send(new_socket, prompt, strlen(prompt), 0);
+
+                            int len = read(new_socket, buffer, sizeof(buffer) - 1);
+                            if (len <= 0) break;
+                            buffer[len] = '\0';
+                            trim(buffer);
+                            char recipient[64];
+                            strcpy(recipient, buffer);
+
+                            // Ask for transfer amount
+                            strcpy(prompt, "Enter transfer amount: ");
+                            send(new_socket, prompt, strlen(prompt), 0);
+
+                            len = read(new_socket, buffer, sizeof(buffer) - 1);
+                            if (len <= 0) break;
+                            buffer[len] = '\0';
+                            float amount = atof(buffer);
+
+                            bool success = transfer_funds(username, recipient, amount);
+
+                            if (success)
+                                strcpy(response, "Transfer successful.\n");
+                            else
+                                strcpy(response, "Transfer failed. Check recipient or insufficient funds.\n");
+
+                            send(new_socket, response, strlen(response), 0);
+                            write_server_log(client_ip, "Transfer Funds", response);
+                            break;
+                        }
+                        case 5: {  // Apply for a Loan
+                            // Send prompt for loan amount
+                            char prompt[] = "Enter loan amount to apply for: ";
+                            send(new_socket, prompt, strlen(prompt), 0);
+
+                            // Read loan amount from client
+                            int len = read(new_socket, buffer, sizeof(buffer) - 1);
+                            if (len <= 0) break;
+                            buffer[len] = '\0';
+
+                            float loan_amount = atof(buffer);
+
+                            bool success = apply_for_loan(username, loan_amount);
+
+                            if (success)
+                                strcpy(response, "Loan application submitted.\n");
+                            else
+                                strcpy(response, "Loan application failed or existing loan present.\n");
+
+                            send(new_socket, response, strlen(response), 0);
+                            write_server_log(client_ip, "Apply for Loan", response);
+                            break;
+                        }
+                        case 6: {  // Change Password
+                            char prompt[] = "Enter new password: ";
+                            send(new_socket, prompt, strlen(prompt), 0);
+
+                            int len = read(new_socket, buffer, sizeof(buffer) - 1);
+                            if (len <= 0) break;
+
+                            buffer[len] = '\0';
+
+                            bool success = change_password(username, buffer);
+
+                            if (success)
+                                strcpy(response, "Password changed successfully.\n");
+                            else
+                                strcpy(response, "Password change failed.\n");
+
+                            send(new_socket, response, strlen(response), 0);
+                            write_server_log(client_ip, "Change Password", response);
+
                             break;
                         }
                         case 9:
