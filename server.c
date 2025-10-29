@@ -1,227 +1,239 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 #include <pthread.h>
-#include <netinet/in.h>
-#include <stdbool.h>
+#include <time.h>
+
+#include "customer.h"
 
 #define PORT 8080
-#define USERS_FILE "users.txt"
-#define MAX_SESSIONS 100
+#define SERVER_LOG_FILE "server.log"
 
-typedef struct {
-    char username[50];
-    char password[50];
-    int role; // 1=Customer, 2=Employee, 3=Manager, 4=Admin
-} User;
+pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-typedef struct {
-    char username[50];
-    bool active;
-} Session;
-
-Session sessions[MAX_SESSIONS];
-pthread_mutex_t session_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t file_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-// Initialize sessions
-void initSessions() {
-    for (int i = 0; i < MAX_SESSIONS; i++) {
-        sessions[i].active = false;
-    }
+void trim(char *str) {
+    char *start = str;
+    while (isspace((unsigned char)*start)) start++;
+    char *end = start + strlen(start) - 1;
+    while (end > start && isspace((unsigned char)*end)) end--;
+    *(end + 1) = '\0';
+    memmove(str, start, end - start + 2);
 }
 
-bool isUserLoggedIn(char* username) {
-    for (int i = 0; i < MAX_SESSIONS; i++) {
-        if (sessions[i].active && strcmp(sessions[i].username, username) == 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
-void addSession(char* username) {
-    pthread_mutex_lock(&session_mutex);
-    for (int i = 0; i < MAX_SESSIONS; i++) {
-        if (!sessions[i].active) {
-            strcpy(sessions[i].username, username);
-            sessions[i].active = true;
-            break;
-        }
-    }
-    pthread_mutex_unlock(&session_mutex);
-}
-
-void removeSession(char* username) {
-    pthread_mutex_lock(&session_mutex);
-    for (int i = 0; i < MAX_SESSIONS; i++) {
-        if (sessions[i].active && strcmp(sessions[i].username, username) == 0) {
-            sessions[i].active = false;
-            break;
-        }
-    }
-    pthread_mutex_unlock(&session_mutex);
-}
-
-int checkLogin(char* username, char* password, int* role) {
-    FILE* file = fopen(USERS_FILE, "r");
-    if (!file) return 0;
-
-    char file_username[50], file_password[50];
-    int file_role;
-    while (fscanf(file, "%s %s %d", file_username, file_password, &file_role) != EOF) {
-        if (strcmp(username, file_username) == 0 &&
-            strcmp(password, file_password) == 0) {
-            *role = file_role;
-            fclose(file);
-            return 1;
-        }
-    }
-    fclose(file);
-    return 0;
-}
-
-int addUser(char* username, char* password, int role) {
-    FILE* file = fopen(USERS_FILE, "a+");
-    if (!file) return 0;
-
-    char file_username[50], file_password[50];
-    int file_role;
-    rewind(file);
-    while (fscanf(file, "%s %s %d", file_username, file_password, &file_role) != EOF) {
-        if (strcmp(username, file_username) == 0) {
-            fclose(file);
-            return 0;
-        }
+void write_server_log(const char *client_ip, const char *request, const char *response) {
+    pthread_mutex_lock(&log_mutex);
+    FILE *fp = fopen(SERVER_LOG_FILE, "a");
+    if (!fp) {
+        perror("Failed to open server log file");
+        pthread_mutex_unlock(&log_mutex);
+        return;
     }
 
-    fprintf(file, "%s %s %d\n", username, password, role);
-    fclose(file);
-    return 1;
+    time_t now = time(NULL);
+    char *timestamp = ctime(&now);
+    timestamp[strlen(timestamp) - 1] = '\0';
+
+    fprintf(fp, "[%s] Client: %s\nRequest: %s\nResponse: %s\n\n", timestamp, client_ip, request, response);
+    fclose(fp);
+    pthread_mutex_unlock(&log_mutex);
 }
 
-void* handleClient(void* arg) {
-    int client_socket = *(int*)arg;
-    char buffer[1024];
-    char loggedUser[50] = "";
-
-    printf("[SERVER] Client connected.\n");
+void handle_client(int new_socket) {
+    char buffer[1024] = {0};
+    char response[1024] = {0};
+    char client_ip[INET_ADDRSTRLEN] = "Unknown";
 
     while (1) {
-        memset(buffer, 0, sizeof(buffer));
-        int valread = read(client_socket, buffer, sizeof(buffer));
+        int valread = read(new_socket, buffer, 1024);
         if (valread <= 0) break;
+        buffer[valread] = '\0';
 
-        if (strncmp(buffer, "LOGIN|", 6) == 0) {
-            char username[50], password[50];
-            int role = 0, input_role;
-            sscanf(buffer, "LOGIN|%[^|]|%[^|]|%d", username, password, &input_role);
+        if (strncmp(buffer, "exit", 4) == 0) break;
 
-            pthread_mutex_lock(&session_mutex);
-            if (isUserLoggedIn(username)) {
-                send(client_socket, "LOGIN_FAIL: Already logged in", 30, 0);
-                printf("[SERVER] Login failed — user '%s' already logged in.\n", username);
-                pthread_mutex_unlock(&session_mutex);
+        char action[16], role[64], username[64], password[64];
+        sscanf(buffer, "%[^|]|%[^|]|%[^|]|%[^|]", action, role, username, password);
+
+        trim(action);
+        trim(role);
+        trim(username);
+        trim(password);
+
+        FILE *fp = NULL;
+
+        if (strcmp(action, "login") == 0) {
+            if (strcmp(role, "customer") == 0) {
+                if (validate_customer_login(username, password)) {
+                    strcpy(response, "Login successful.\n");
+                    send(new_socket, response, strlen(response), 0);
+                    write_server_log(client_ip, buffer, response);
+
+                    char cust_menu[] =
+                        "Customer Menu:\n"
+                        "1. View Account Balance\n"
+                        "2. Deposit Money\n"
+                        "3. Withdraw Money\n"
+                        "4. Transfer Funds\n"
+                        "5. Apply for a Loan\n"
+                        "6. Change Password\n"
+                        "7. Add Feedback\n"
+                        "8. View Transaction History\n"
+                        "9. Logout\n"
+                        "10. Exit\n"
+                        "Enter choice: ";
+
+                    while (1) {
+                        send(new_socket, cust_menu, strlen(cust_menu), 0);
+                        valread = read(new_socket, buffer, sizeof(buffer) - 1);
+                        if (valread <= 0) break;
+                        buffer[valread] = '\0';
+                        int choice = atoi(buffer);
+
+                        switch (choice) {
+                        case 1: {
+                            float balance = get_account_balance(username);
+                            if (balance < 0)
+                                snprintf(response, sizeof(response), "Error retrieving balance.\n");
+                            else
+                                snprintf(response, sizeof(response), "Your account balance is: %.2f\n", balance);
+                            send(new_socket, response, strlen(response), 0);
+                            write_server_log(client_ip, "View Account Balance", response);
+                            break;
+                        }
+                        case 2: {
+                            strcpy(response, "Enter deposit amount: ");
+                            send(new_socket, response, strlen(response), 0);
+                            valread = read(new_socket, buffer, sizeof(buffer) - 1);
+                            if (valread <= 0) break;
+                            buffer[valread] = '\0';
+
+                            float amount = atof(buffer);
+                            bool success = deposit_money(username, amount);
+                            if (success)
+                                strcpy(response, "Deposit successful.\n");
+                            else
+                                strcpy(response, "Deposit failed.\n");
+                            send(new_socket, response, strlen(response), 0);
+                            write_server_log(client_ip, "Deposit Money", response);
+                            break;
+                        }
+                        case 9:
+                        case 10:
+                            strcpy(response, "Logging out...\n");
+                            send(new_socket, response, strlen(response), 0);
+                            write_server_log(client_ip, "Logout or Exit", response);
+                            return;
+                        default:
+                            strcpy(response, "Functionality not yet implemented.\n");
+                            send(new_socket, response, strlen(response), 0);
+                            write_server_log(client_ip, "Other Customer Menu Choice", response);
+                            break;
+                        }
+                    }
+                } else {
+                    strcpy(response, "Login failed.\n");
+                    send(new_socket, response, strlen(response), 0);
+                    write_server_log(client_ip, buffer, response);
+                }
+            } else {
+                fp = fopen("users.txt", "a+");
+                if (!fp) {
+                    strcpy(response, "Server error.\n");
+                    send(new_socket, response, strlen(response), 0);
+                    write_server_log(client_ip, buffer, response);
+                    continue;
+                }
+                int found = 0;
+                char line[256];
+                rewind(fp);
+                while (fgets(line, sizeof(line), fp)) {
+                    char utype[16], uname[64], upwd[64];
+                    sscanf(line, "%[^|]|%[^|]|%[^|]", utype, uname, upwd);
+                    trim(utype);
+                    trim(uname);
+                    trim(upwd);
+                    if (strcmp(utype, role) == 0 && strcmp(uname, username) == 0 &&
+                        strcmp(upwd, password) == 0) {
+                        found = 1;
+                        break;
+                    }
+                }
+                fclose(fp);
+                if (found)
+                    strcpy(response, "Login successful.\n");
+                else
+                    strcpy(response, "Login failed.\n");
+                send(new_socket, response, strlen(response), 0);
+                write_server_log(client_ip, buffer, response);
+            }
+        } else if (strcmp(action, "signup") == 0) {
+            fp = fopen("users.txt", "a+");
+            if (!fp) {
+                strcpy(response, "Server error.\n");
+                send(new_socket, response, strlen(response), 0);
+                write_server_log(client_ip, buffer, response);
                 continue;
             }
-            pthread_mutex_unlock(&session_mutex);
-
-            pthread_mutex_lock(&file_mutex);
-            int success = checkLogin(username, password, &role);
-            pthread_mutex_unlock(&file_mutex);
-
-            if (success && role == input_role) {
-                addSession(username);
-                strcpy(loggedUser, username);
-                sprintf(buffer, "LOGIN_SUCCESS|%d", role);
-                send(client_socket, buffer, strlen(buffer), 0);
-                printf("[SERVER] User '%s' logged in as role %d.\n", username, role);
-            } else {
-                send(client_socket, "LOGIN_FAIL", 10, 0);
-                printf("[SERVER] Login failed for username '%s'.\n", username);
-            }
-
-        } else if (strncmp(buffer, "SIGNUP|", 7) == 0) {
-            char username[50], password[50];
-            int role;
-            sscanf(buffer, "SIGNUP|%[^|]|%[^|]|%d", username, password, &role);
-
-            // Only allow Employee(2) or Manager(3) signup
-            if (role != 2 && role != 3) {
-                send(client_socket, "SIGNUP_FAIL: Only Manager or Employee allowed", 45, 0);
-                printf("[SERVER] Signup failed — role %d not allowed for username '%s'.\n", role, username);
-                continue;
-            }
-
-            pthread_mutex_lock(&file_mutex);
-            int success = addUser(username, password, role);
-            pthread_mutex_unlock(&file_mutex);
-
-            if (success) {
-                send(client_socket, "SIGNUP_SUCCESS", 14, 0);
-                printf("[SERVER] New user '%s' signed up with role %d.\n", username, role);
-            } else {
-                send(client_socket, "SIGNUP_FAIL: Username already exists", 38, 0);
-                printf("[SERVER] Signup failed — username '%s' already exists.\n", username);
-            }
-
-        } else if (strcmp(buffer, "exit") == 0) {
-            send(client_socket, "exit", 4, 0);
-            if (strlen(loggedUser) > 0) removeSession(loggedUser);
-            printf("[SERVER] Client disconnected.\n");
-            break;
+            fprintf(fp, "%s|%s|%s\n", role, username, password);
+            fclose(fp);
+            strcpy(response, "Signup successful.\n");
+            send(new_socket, response, strlen(response), 0);
+            write_server_log(client_ip, buffer, response);
         } else {
-            send(client_socket, "INVALID_COMMAND", 15, 0);
-            printf("[SERVER] Received invalid command: %s\n", buffer);
+            strcpy(response, "Invalid request.\n");
+            send(new_socket, response, strlen(response), 0);
+            write_server_log(client_ip, buffer, response);
         }
+        memset(buffer, 0, sizeof(buffer));
     }
+    close(new_socket);
+}
 
-    if (strlen(loggedUser) > 0) removeSession(loggedUser);
-
-    close(client_socket);
-    pthread_exit(NULL);
+void *thread_func(void *arg) {
+    int new_socket = *(int *)arg;
+    handle_client(new_socket);
+    free(arg);
+    return NULL;
 }
 
 int main() {
     int server_fd, new_socket;
     struct sockaddr_in address;
-    int addrlen = sizeof(address);
-    pthread_t tid;
+    int opt = 1;
+    socklen_t addrlen = sizeof(address);
 
-    initSessions();
-
-    server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_fd == -1) {
-        perror("Socket creation failed");
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        perror("Socket failed");
         exit(EXIT_FAILURE);
     }
+    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(PORT);
 
-    if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
         perror("Bind failed");
         exit(EXIT_FAILURE);
     }
-
-    if (listen(server_fd, 5) < 0) {
-        perror("Listen failed");
+    if (listen(server_fd, 3) < 0) {
+        perror("Listen");
         exit(EXIT_FAILURE);
     }
-
-    printf("[SERVER] Listening on port %d...\n", PORT);
+    printf("Server listening on port %d...\n", PORT);
 
     while (1) {
-        new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
-        if (new_socket < 0) {
-            perror("[SERVER] Accept failed");
-            continue;
+        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, &addrlen)) < 0) {
+            perror("Accept");
+            exit(EXIT_FAILURE);
         }
-        pthread_create(&tid, NULL, handleClient, (void*)&new_socket);
+        int *client_sock = malloc(sizeof(int));
+        *client_sock = new_socket;
+        pthread_t tid;
+        pthread_create(&tid, NULL, thread_func, client_sock);
+        pthread_detach(tid);
     }
-
-    close(server_fd);
     return 0;
 }

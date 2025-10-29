@@ -1,0 +1,85 @@
+[Tue Oct 28 19:45:56 2025] Client: Unknown
+Request: login|customer|Parva|parva123
+Response: Login successful.
+
+
+[Tue Oct 28 19:46:00 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 1000.00
+
+
+[Tue Oct 28 19:46:21 2025] Client: Unknown
+Request: Deposit Money
+Response: Deposit successful.
+
+
+[Tue Oct 28 19:46:32 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 1500.00
+
+
+[Tue Oct 28 19:46:55 2025] Client: Unknown
+Request: Logout or Exit
+Response: Logging out...
+
+
+[Tue Oct 28 19:51:29 2025] Client: Unknown
+Request: login|customer|Parva|parva123
+Response: Login successful.
+
+
+[Tue Oct 28 19:51:30 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 1500.00
+
+
+[Tue Oct 28 19:51:41 2025] Client: Unknown
+Request: Deposit Money
+Response: Deposit successful.
+
+
+[Tue Oct 28 19:52:21 2025] Client: Unknown
+Request: Logout or Exit
+Response: Logging out...
+
+
+[Tue Oct 28 19:55:22 2025] Client: Unknown
+Request: login|customer|Parva|parva123
+Response: Login successful.
+
+
+[Tue Oct 28 19:55:24 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 1750.00
+
+
+[Tue Oct 28 19:55:38 2025] Client: Unknown
+Request: Deposit Money
+Response: Deposit successful.
+
+
+[Tue Oct 28 19:55:42 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 2000.00
+
+
+[Tue Oct 28 19:55:45 2025] Client: Unknown
+Request: Other Customer Menu Choice
+Response: Functionality not yet implemented.
+
+
+[Tue Oct 28 19:55:51 2025] Client: Unknown
+Request: Other Customer Menu Choice
+Response: Functionality not yet implemented.
+
+
+[Tue Oct 28 19:55:53 2025] Client: Unknown
+Request: Other Customer Menu Choice
+Response: Functionality not yet implemented.
+
+
+[Tue Oct 28 19:56:00 2025] Client: Unknown
+Request: Logout or Exit
+Response: Logging out...
+
+

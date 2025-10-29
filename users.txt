@@ -1,3 +1,2 @@
-Parva deku1234 1
-Aditya adi2004 1
-gaurav gau1234 3
+employee|Keyur|keypad1234
+customer|Parva|parva123
