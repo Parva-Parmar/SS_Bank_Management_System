@@ -349,5 +349,62 @@ bool change_password(const char *username, const char *new_password) {
     return updated;
 }
 
-bool add_feedback(const char *username, const char *feedback) { return false; }
-void view_transaction_history(const char *username, int sockfd) {}
+bool add_feedback(const char *username, const char *feedback) {
+    int fd;
+    FILE *fp = fopen("feedback.txt", "a");
+    if (!fp) return false;
+
+    fd = fileno(fp);
+    if (flock(fd, LOCK_EX) != 0) {
+        fclose(fp);
+        return false;
+    }
+
+    time_t now = time(NULL);
+    char *dt = ctime(&now);
+    dt[strlen(dt) - 1] = '\0'; // Remove newline at end
+
+    fprintf(fp, "%s|%s|%s\n", username, dt, feedback);
+
+    flock(fd, LOCK_UN);
+    fclose(fp);
+    return true;
+}
+bool get_transaction_history(const char *username, char *output_buffer, size_t buf_size) {
+    if (!username || !output_buffer) return false;
+
+    FILE *fp = fopen("transactions.log", "r");
+    if (!fp) return false;
+
+    output_buffer[0] = '\0';
+
+    char line[512];
+    char user_in_line[128];
+
+    while (fgets(line, sizeof(line), fp)) {
+        // Extract username from line (assuming format: username|transaction_type|amount|date|desc)
+        if (sscanf(line, "%127[^|]|", user_in_line) == 1) {
+            // Trim newline/whitespace
+            for (int i = 0; user_in_line[i]; i++) {
+                if (user_in_line[i] == '\n' || user_in_line[i] == '\r') {
+                    user_in_line[i] = '\0';
+                    break;
+                }
+            }
+            if (strcmp(user_in_line, username) == 0) {
+                // Append line safely to output_buffer
+                if ((strlen(output_buffer) + strlen(line) + 1) < buf_size) {
+                    strcat(output_buffer, line);
+                } else {
+                    // Buffer full; stop reading more
+                    break;
+                }
+            }
+        }
+    }
+
+    fclose(fp);
+    return (strlen(output_buffer) > 0);
+}
+
+

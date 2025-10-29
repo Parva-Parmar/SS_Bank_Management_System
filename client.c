@@ -209,6 +209,34 @@ int main() {
                         buffer[valread] = '\0';
                         printf("%s", buffer);
                     }
+                    else if (cust_choice == 7) {  // Add Feedback
+                        // Wait for server prompt
+                        valread = read(sock, buffer, 1024);
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+
+                        // Input feedback (one line)
+                        char feedback[256];
+                        fgets(feedback, sizeof(feedback), stdin);
+                        feedback[strcspn(feedback, "\n")] = 0;  // Remove newline
+
+                        // Send feedback to server
+                        send(sock, feedback, strlen(feedback), 0);
+
+                        // Receive confirmation and display
+                        valread = read(sock, buffer, 1024);
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+                    }
+                    else if (cust_choice == 8) {  // View Transaction History
+                        int valread = read(sock, buffer, sizeof(buffer) - 1);
+                        if (valread <= 0) {
+                            printf("Failed to read transaction history.\n");
+                        } else {
+                            buffer[valread] = '\0';
+                            printf("%s", buffer);
+                        }
+                    }
                     else {
                         valread = read(sock, buffer, 1024);
                         if (valread <= 0) break;

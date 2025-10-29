@@ -1,6 +1,6 @@
 #ifndef CUSTOMER_H
 #define CUSTOMER_H
-
+#include <stddef.h>
 #include <stdbool.h>
 
 bool validate_customer_login(const char *username, const char *password);
@@ -14,6 +14,7 @@ bool transfer_funds(const char *from_user, const char *to_user, float amount);
 bool apply_for_loan(const char *username, float amount);
 bool change_password(const char *username, const char *new_password);
 bool add_feedback(const char *username, const char *feedback);
-void view_transaction_history(const char *username, int sockfd);
+bool get_transaction_history(const char *username, char *output_buffer, size_t buf_size);
+
 
 #endif

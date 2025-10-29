@@ -368,3 +368,46 @@ Request: Logout or Exit
 Response: Logging out...
 
 
+[Wed Oct 29 16:10:12 2025] Client: Unknown
+Request: login|customer|Parva|parmar123
+Response: Login successful.
+
+
+[Wed Oct 29 16:10:43 2025] Client: Unknown
+Request: Add Feedback
+Response: Thank you for your feedback.
+
+
+[Wed Oct 29 16:11:05 2025] Client: Unknown
+Request: Logout or Exit
+Response: Logging out...
+
+
+[Wed Oct 29 16:32:35 2025] Client: Unknown
+Request: login|customer|Parva|parmar123
+Response: Login successful.
+
+
+[Wed Oct 29 16:32:38 2025] Client: Unknown
+Request: View Transaction History
+Response: No history
+
+[Wed Oct 29 16:33:03 2025] Client: Unknown
+Request: Logout or Exit
+Response: Logging out...
+
+
+[Wed Oct 29 16:38:01 2025] Client: Unknown
+Request: login|customer|Parva|parmar123
+Response: Login successful.
+
+
+[Wed Oct 29 16:38:09 2025] Client: Unknown
+Request: View Transaction History
+Response: No history
+
+[Wed Oct 29 16:38:22 2025] Client: Unknown
+Request: Logout or Exit
+Response: Logging out...
+
+

@@ -213,6 +213,36 @@ void handle_client(int new_socket) {
 
                             break;
                         }
+                        case 7: {  // Add Feedback
+                            char prompt[] = "Enter your feedback: ";
+                            send(new_socket, prompt, strlen(prompt), 0);
+
+                            int len = read(new_socket, buffer, sizeof(buffer) - 1);
+                            if (len <= 0) break;
+                            buffer[len] = '\0';
+
+                            bool success = add_feedback(username, buffer);
+                            if (success)
+                                strcpy(response, "Thank you for your feedback.\n");
+                            else
+                                strcpy(response, "Failed to submit feedback.\n");
+
+                            send(new_socket, response, strlen(response), 0);
+                            write_server_log(client_ip, "Add Feedback", response);
+                            break;
+                        }
+                        case 8: {  // View Transaction History
+                            char history[4096];
+                            bool success = get_transaction_history(username, history, sizeof(history));
+                            if (success) {
+                                send(new_socket, history, strlen(history), 0);
+                            } else {
+                                char *no_history = "No transaction history found.\n";
+                                send(new_socket, no_history, strlen(no_history), 0);
+                            }
+                            write_server_log(client_ip, "View Transaction History", success ? "History sent" : "No history");
+                            break;
+                        }
                         case 9:
                         case 10:
                             strcpy(response, "Logging out...\n");
