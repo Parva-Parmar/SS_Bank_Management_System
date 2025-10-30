@@ -411,3 +411,168 @@ Request: Logout or Exit
 Response: Logging out...
 
 
+[Wed Oct 29 23:43:12 2025] Client: Unknown
+Request: login|employee|Keyur|keypad1234
+Response: Invalid request.
+
+
+[Wed Oct 29 23:47:17 2025] Client: Unknown
+Request: login|employee|Keyur|keypad1234
+Response: Invalid request.
+
+
+[Wed Oct 29 23:49:52 2025] Client: Unknown
+Request: login|employee|Keyur|keypad1234
+Response: Invalid request.
+
+
+[Wed Oct 29 23:52:27 2025] Client: Unknown
+Request: login|employee|Keyur|keypad1234
+Response: Invalid request.
+
+
+[Wed Oct 29 23:54:45 2025] Client: Unknown
+Request: login|employee|Keyur|keypad1234
+Response: Invalid request.
+
+
+[Wed Oct 29 23:57:35 2025] Client: Unknown
+Request: login|employee|Keyur|keypad1234
+Response: Login successful.
+
+
+[Wed Oct 29 23:57:46 2025] Client: Unknown
+Request: Logout
+Response: Logging out...
+
+
+[Wed Oct 29 23:58:37 2025] Client: Unknown
+Request: login|employee|Keyur|keypad1234
+Response: Login successful.
+
+
+[Wed Oct 29 23:59:52 2025] Client: Unknown
+Request: Logout
+Response: Logging out...
+
+
+[Thu Oct 30 00:10:58 2025] Client: Unknown
+Request: login|employee|Keyur|keypad1234
+Response: Login successful.
+
+
+[Thu Oct 30 00:18:27 2025] Client: Unknown
+Request: login|employee|Keyur|keypad1234
+Response: Login successful.
+
+
+[Thu Oct 30 00:19:34 2025] Client: Unknown
+Request: Logout
+Response: Logging out...
+
+
+[Thu Oct 30 00:19:49 2025] Client: Unknown
+Request: login|customer|Dholu|dholu123
+Response: Login successful.
+
+
+[Thu Oct 30 00:19:56 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 0.00
+
+
+[Thu Oct 30 00:20:04 2025] Client: Unknown
+Request: Withdraw Money
+Response: Withdrawal failed: insufficient funds.
+
+
+[Thu Oct 30 00:20:10 2025] Client: Unknown
+Request: Deposit Money
+Response: Deposit successful.
+
+
+[Thu Oct 30 00:20:13 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 500.00
+
+
+[Thu Oct 30 00:20:19 2025] Client: Unknown
+Request: Deposit Money
+Response: Deposit successful.
+
+
+[Thu Oct 30 00:20:20 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 833.00
+
+
+[Thu Oct 30 00:20:25 2025] Client: Unknown
+Request: Logout or Exit
+Response: Logging out...
+
+
+[Thu Oct 30 10:43:30 2025] Client: Unknown
+Request: login|employee|Keyur|keypad1234
+Response: Login successful.
+
+
+[Thu Oct 30 10:45:23 2025] Client: Unknown
+Request: login|employee|Keyur|keypad1234
+Response: Login successful.
+
+
+[Thu Oct 30 10:58:33 2025] Client: Unknown
+Request: Logout
+Response: Logging out...
+
+
+[Thu Oct 30 11:00:14 2025] Client: Unknown
+Request: login|employee|Keyur|keypad1234
+Response: Login successful.
+
+
+[Thu Oct 30 11:43:42 2025] Client: Unknown
+Request: login|employee|Keyur|keypad1234
+Response: Login successful.
+
+
+[Thu Oct 30 11:46:54 2025] Client: Unknown
+Request: login|employee|Keyur|keypad1234
+Response: Login successful.
+
+
+[Thu Oct 30 11:53:35 2025] Client: Unknown
+Request: login|employee|Keyur|keypad1234
+Response: Login successful.
+
+
+[Thu Oct 30 12:01:21 2025] Client: Unknown
+Request: login|employee|Keyur|keypad1234
+Response: Login successful.
+
+
+[Thu Oct 30 12:16:26 2025] Client: Unknown
+Request: login|employee|Keyur|keypad1234
+Response: Login successful.
+
+
+[Thu Oct 30 12:39:16 2025] Client: Unknown
+Request: login|employee|Keyur|keypad1234
+Response: Login successful.
+
+
+[Thu Oct 30 13:54:54 2025] Client: Unknown
+Request: signup|employee|Emp1|emp1_1234|9879879879
+Response: Signup successful. Your ID is E000001
+
+
+[Thu Oct 30 13:55:48 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 14:30:40 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+

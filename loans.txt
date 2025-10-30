@@ -1,0 +1,3 @@
+1001|cust1|5000.00|In-Process|E000002
+1002|cust2|12000|Pending|E000001
+1003|cust3|7000|Approved|E000001

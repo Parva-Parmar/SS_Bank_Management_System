@@ -323,7 +323,7 @@ bool apply_for_loan(const char *username, float loan_amount) {
     return false;
 }
 
-bool change_password(const char *username, const char *new_password) {
+bool customer_change_password(const char *username, const char *new_password) {
     int fd;
     FILE *fp = open_file_locked("users.txt", "r+", &fd);
     if (!fp) return false;

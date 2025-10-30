@@ -8,25 +8,36 @@
 #include <time.h>
 
 #include "customer.h"
+#include "employee.h"
 
 #define PORT 8080
 #define SERVER_LOG_FILE "server.log"
+#define USERS_FILE "users.txt"
+#define CUSTOMER_DATA_FILE "customer_data.txt"
+#define EMPLOYEE_FILE "employee_data.txt"
+#define MANAGER_FILE "manager_data.txt"
 
 pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
+char logged_in_username[64] = {0};  // store username after login
 
-void trim(char *str) {
+void trim(char *str)
+{
     char *start = str;
-    while (isspace((unsigned char)*start)) start++;
+    while (isspace((unsigned char)*start))
+        start++;
     char *end = start + strlen(start) - 1;
-    while (end > start && isspace((unsigned char)*end)) end--;
+    while (end > start && isspace((unsigned char)*end))
+        end--;
     *(end + 1) = '\0';
     memmove(str, start, end - start + 2);
 }
 
-void write_server_log(const char *client_ip, const char *request, const char *response) {
+void write_server_log(const char *client_ip, const char *request, const char *response)
+{
     pthread_mutex_lock(&log_mutex);
     FILE *fp = fopen(SERVER_LOG_FILE, "a");
-    if (!fp) {
+    if (!fp)
+    {
         perror("Failed to open server log file");
         pthread_mutex_unlock(&log_mutex);
         return;
@@ -41,31 +52,66 @@ void write_server_log(const char *client_ip, const char *request, const char *re
     pthread_mutex_unlock(&log_mutex);
 }
 
-void handle_client(int new_socket) {
+void generate_next_id(const char *filename, char prefix, char *out_id, size_t out_id_size)
+{
+    FILE *fp = fopen(filename, "r");
+    if (!fp)
+    {
+        // File doesn't exist, start from 1
+        snprintf(out_id, out_id_size, "%c000001", prefix);
+        return;
+    }
+    char line[256];
+    int max_num = 0;
+    while (fgets(line, sizeof(line), fp))
+    {
+        char id[16];
+        if (sscanf(line, "%15s", id) == 1 && id[0] == prefix)
+        {
+            int num = atoi(id + 1);
+            if (num > max_num)
+                max_num = num;
+        }
+    }
+    fclose(fp);
+
+    snprintf(out_id, out_id_size, "%c%06d", prefix, max_num + 1);
+}
+
+void handle_client(int new_socket)
+{
     char buffer[1024] = {0};
     char response[1024] = {0};
     char client_ip[INET_ADDRSTRLEN] = "Unknown";
 
-    while (1) {
+    while (1)
+    {
         int valread = read(new_socket, buffer, 1024);
-        if (valread <= 0) break;
+        if (valread <= 0)
+            break;
         buffer[valread] = '\0';
+        printf("DEBUG: Received raw request string: [%s]\n", buffer);
+        if (strncmp(buffer, "exit", 4) == 0)
+            break;
 
-        if (strncmp(buffer, "exit", 4) == 0) break;
-
-        char action[16], role[64], username[64], password[64];
-        sscanf(buffer, "%[^|]|%[^|]|%[^|]|%[^|]", action, role, username, password);
+        char action[16], role[32], username[64], password[64], mobile[32];
+        sscanf(buffer, "%[^|]|%[^|]|%[^|]|%[^|]|%[^|]", action, role, username, password, mobile);
 
         trim(action);
         trim(role);
         trim(username);
         trim(password);
-
+        trim(mobile);
+        printf("DEBUG: Parsed values -> action: [%s], role: [%s], username: [%s], password: [%s], mobile: [%s]\n", action, role, username, password, mobile);
         FILE *fp = NULL;
-
-        if (strcmp(action, "login") == 0) {
-            if (strcmp(role, "customer") == 0) {
-                if (validate_customer_login(username, password)) {
+        printf("DEBUG: Checking role = %s\n", role);
+        if (strcmp(action, "login") == 0)
+        {
+            if (strcmp(role, "customer") == 0)
+            {
+                printf("DEBUG: Handling customer login\n");
+                if (validate_customer_login(username, password))
+                {
                     strcpy(response, "Login successful.\n");
                     send(new_socket, response, strlen(response), 0);
                     write_server_log(client_ip, buffer, response);
@@ -84,15 +130,19 @@ void handle_client(int new_socket) {
                         "10. Exit\n"
                         "Enter choice: ";
 
-                    while (1) {
+                    while (1)
+                    {
                         send(new_socket, cust_menu, strlen(cust_menu), 0);
                         valread = read(new_socket, buffer, sizeof(buffer) - 1);
-                        if (valread <= 0) break;
+                        if (valread <= 0)
+                            break;
                         buffer[valread] = '\0';
                         int choice = atoi(buffer);
 
-                        switch (choice) {
-                        case 1: {
+                        switch (choice)
+                        {
+                        case 1:
+                        {
                             float balance = get_account_balance(username);
                             if (balance < 0)
                                 snprintf(response, sizeof(response), "Error retrieving balance.\n");
@@ -102,11 +152,13 @@ void handle_client(int new_socket) {
                             write_server_log(client_ip, "View Account Balance", response);
                             break;
                         }
-                        case 2: {
+                        case 2:
+                        {
                             strcpy(response, "Proceding to deposit money.\n");
                             send(new_socket, response, strlen(response), 0);
                             valread = read(new_socket, buffer, sizeof(buffer) - 1);
-                            if (valread <= 0) break;
+                            if (valread <= 0)
+                                break;
                             buffer[valread] = '\0';
 
                             float amount = atof(buffer);
@@ -119,7 +171,8 @@ void handle_client(int new_socket) {
                             write_server_log(client_ip, "Deposit Money", response);
                             break;
                         }
-                        case 3: { // Assuming 3 is withdrawal
+                        case 3:
+                        { // Assuming 3 is withdrawal
                             // send(new_socket, "Enter withdrawal amount: ", 25, 0);
                             strcpy(response, "Proceding to withdraw money.\n");
                             send(new_socket, response, strlen(response), 0);
@@ -137,13 +190,15 @@ void handle_client(int new_socket) {
                             write_server_log(client_ip, "Withdraw Money", response);
                             break;
                         }
-                        case 4: {  // Transfer Funds
+                        case 4:
+                        { // Transfer Funds
                             // Ask for recipient username
                             char prompt[] = "Enter recipient username: ";
                             send(new_socket, prompt, strlen(prompt), 0);
 
                             int len = read(new_socket, buffer, sizeof(buffer) - 1);
-                            if (len <= 0) break;
+                            if (len <= 0)
+                                break;
                             buffer[len] = '\0';
                             trim(buffer);
                             char recipient[64];
@@ -154,7 +209,8 @@ void handle_client(int new_socket) {
                             send(new_socket, prompt, strlen(prompt), 0);
 
                             len = read(new_socket, buffer, sizeof(buffer) - 1);
-                            if (len <= 0) break;
+                            if (len <= 0)
+                                break;
                             buffer[len] = '\0';
                             float amount = atof(buffer);
 
@@ -169,14 +225,16 @@ void handle_client(int new_socket) {
                             write_server_log(client_ip, "Transfer Funds", response);
                             break;
                         }
-                        case 5: {  // Apply for a Loan
+                        case 5:
+                        { // Apply for a Loan
                             // Send prompt for loan amount
                             char prompt[] = "Enter loan amount to apply for: ";
                             send(new_socket, prompt, strlen(prompt), 0);
 
                             // Read loan amount from client
                             int len = read(new_socket, buffer, sizeof(buffer) - 1);
-                            if (len <= 0) break;
+                            if (len <= 0)
+                                break;
                             buffer[len] = '\0';
 
                             float loan_amount = atof(buffer);
@@ -192,16 +250,18 @@ void handle_client(int new_socket) {
                             write_server_log(client_ip, "Apply for Loan", response);
                             break;
                         }
-                        case 6: {  // Change Password
+                        case 6:
+                        { // Change Password
                             char prompt[] = "Enter new password: ";
                             send(new_socket, prompt, strlen(prompt), 0);
 
                             int len = read(new_socket, buffer, sizeof(buffer) - 1);
-                            if (len <= 0) break;
+                            if (len <= 0)
+                                break;
 
                             buffer[len] = '\0';
 
-                            bool success = change_password(username, buffer);
+                            bool success = customer_change_password(username, buffer);
 
                             if (success)
                                 strcpy(response, "Password changed successfully.\n");
@@ -213,12 +273,14 @@ void handle_client(int new_socket) {
 
                             break;
                         }
-                        case 7: {  // Add Feedback
+                        case 7:
+                        { // Add Feedback
                             char prompt[] = "Enter your feedback: ";
                             send(new_socket, prompt, strlen(prompt), 0);
 
                             int len = read(new_socket, buffer, sizeof(buffer) - 1);
-                            if (len <= 0) break;
+                            if (len <= 0)
+                                break;
                             buffer[len] = '\0';
 
                             bool success = add_feedback(username, buffer);
@@ -231,12 +293,16 @@ void handle_client(int new_socket) {
                             write_server_log(client_ip, "Add Feedback", response);
                             break;
                         }
-                        case 8: {  // View Transaction History
+                        case 8:
+                        { // View Transaction History
                             char history[4096];
                             bool success = get_transaction_history(username, history, sizeof(history));
-                            if (success) {
+                            if (success)
+                            {
                                 send(new_socket, history, strlen(history), 0);
-                            } else {
+                            }
+                            else
+                            {
                                 char *no_history = "No transaction history found.\n";
                                 send(new_socket, no_history, strlen(no_history), 0);
                             }
@@ -256,79 +322,358 @@ void handle_client(int new_socket) {
                             break;
                         }
                     }
-                } else {
+                }
+
+                else
+                {
+                    printf("DEBUG: Employee login failed.\n");
                     strcpy(response, "Login failed.\n");
                     send(new_socket, response, strlen(response), 0);
                     write_server_log(client_ip, buffer, response);
                 }
-            } else {
-                fp = fopen("users.txt", "a+");
-                if (!fp) {
-                    strcpy(response, "Server error.\n");
+            }
+            else if (strcmp(role, "employee") == 0)
+            {
+                printf("DEBUG: Entered employee login branch for user %s\n", username);
+                int valid = validate_employee_login(username, password);
+                printf("DEBUG: validate_employee_login returned %d\n", valid);
+                if (valid)
+                {
+                    // After verifying user credentials
+                    strcpy(logged_in_username, username);
+                    printf("DEBUG: Employee login successful.\n");
+                    strcpy(response, "Login successful.\n");
                     send(new_socket, response, strlen(response), 0);
                     write_server_log(client_ip, buffer, response);
-                    continue;
-                }
-                int found = 0;
-                char line[256];
-                rewind(fp);
-                while (fgets(line, sizeof(line), fp)) {
-                    char utype[16], uname[64], upwd[64];
-                    sscanf(line, "%[^|]|%[^|]|%[^|]", utype, uname, upwd);
-                    trim(utype);
-                    trim(uname);
-                    trim(upwd);
-                    if (strcmp(utype, role) == 0 && strcmp(uname, username) == 0 &&
-                        strcmp(upwd, password) == 0) {
-                        found = 1;
-                        break;
+
+                    // Employee menu string
+                    char emp_menu[] =
+                        "Employee Menu:\n"
+                        "1. Add New Customer\n"
+                        "2. Modify Customer Details\n"
+                        "3. Process Loan Applications\n"
+                        "4. Approve Loan\n"
+                        "5. Reject Loan\n"
+                        "6. View Assigned Loan Applications\n"
+                        "7. View Customer Transactions\n"
+                        "8. Change Password\n"
+                        "9. Logout\n"
+                        "Enter choice: \n";
+
+                    while (1)
+                    {
+                        send(new_socket, emp_menu, strlen(emp_menu), 0);
+                        valread = read(new_socket, buffer, sizeof(buffer) - 1);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+                        int choice = atoi(buffer);
+
+                        switch (choice)
+                        {
+                        case 1:
+                        {
+                            char add_new_username[64], add_new_password[64], add_new_mobile[16], account_number[16];
+                            FILE *fp;
+                            long max_account_num = 1000000;
+
+                            send(new_socket, "Enter new customer username:\n", 29, 0);
+                            valread = read(new_socket, add_new_username, sizeof(add_new_username) - 1);
+                            if (valread <= 0)
+                                break;
+                            add_new_username[valread] = '\0';
+                            trim(add_new_username);
+
+                            send(new_socket, "Enter password:\n", 16, 0);
+                            valread = read(new_socket, add_new_password, sizeof(add_new_password) - 1);
+                            if (valread <= 0)
+                                break;
+                            add_new_password[valread] = '\0';
+                            trim(add_new_password);
+
+                            send(new_socket, "Enter mobile number:\n", 21, 0);
+                            valread = read(new_socket, add_new_mobile, sizeof(add_new_mobile) - 1);
+                            if (valread <= 0)
+                                break;
+                            add_new_mobile[valread] = '\0';
+                            trim(add_new_mobile);
+
+                            // Generate unique account number
+                            fp = fopen(CUSTOMER_DATA_FILE, "r");
+                            if (fp)
+                            {
+                                char line[256];
+                                while (fgets(line, sizeof(line), fp))
+                                {
+                                    char username[64], mobile[16], loan_status[32];
+                                    float balance;
+                                    long acct_num;
+                                    if (sscanf(line, "%[^|]|%ld|%[^|]|%f|%s", username, &acct_num, mobile, &balance, loan_status) == 5)
+                                    {
+                                        if (acct_num >= max_account_num)
+                                            max_account_num = acct_num + 1;
+                                    }
+                                }
+                                fclose(fp);
+                            }
+                            snprintf(account_number, sizeof(account_number), "%ld", max_account_num);
+
+                            // Call add_new_customer with full details
+                            int result = add_new_customer(add_new_username, add_new_password, account_number, add_new_mobile);
+
+                            if (result == 0)
+                                send(new_socket, "New customer added successfully.\n", 32, 0);
+                            else if (result == -2)
+                                send(new_socket, "Username already exists. Try another.\n", 38, 0);
+                            else
+                                send(new_socket, "Failed to add new customer.\n", 27, 0);
+
+                            send(new_socket, emp_menu, strlen(emp_menu), 0);
+                            break;
+                        }
+                        case 2:
+                            modify_customer_details(new_socket);
+                            break;
+                        case 3: {
+                            char employee_id[16] = {0};
+                            FILE *fp = fopen("employee_data.txt", "r");
+                            if (!fp) {
+                                send(new_socket, "Error opening employee data file.\n", 34, 0);
+                                break;
+                            }
+                            char line[256];
+                            char username[64];
+                            
+                            // Replace this with your actual logged-in username variable
+                            // For instance, if you set it after login and store in a variable 'logged_in_username'
+                            strcpy(username, logged_in_username);
+                            
+                            while (fgets(line, sizeof(line), fp)) {
+                                char id[16], uname[64], mobile[32];
+                                if (sscanf(line, "%15[^|]|%63[^|]|%31[^\n]", id, uname, mobile) == 3) {
+                                    if (strcmp(uname, username) == 0) {
+                                        strcpy(employee_id, id);
+                                        break;
+                                    }
+                                }
+                            }
+                            fclose(fp);
+
+                            if (employee_id[0] == '\0') {
+                                send(new_socket, "Employee ID not found for user.\n", 32, 0);
+                                break;
+                            }
+
+                            process_loan_applications(new_socket, employee_id);
+                            break;
+                        }
+                        case 4:
+                            approve_loan(new_socket);
+                            break;
+                        case 5:
+                            reject_loan(new_socket);
+                            break;
+                        case 6:
+                            view_assigned_loan_applications(new_socket);
+                            break;
+                        case 7:
+                            view_customer_transactions(new_socket);
+                            break;
+                        case 8:
+                            change_password(new_socket);
+                            break;
+                        case 9:
+                            strcpy(response, "Logging out...\n");
+                            send(new_socket, response, strlen(response), 0);
+                            write_server_log(client_ip, "Logout", response);
+                            return; // Exit loop and finish session for employee
+                        default:
+                            strcpy(response, "Invalid choice. Please try again.\n");
+                            send(new_socket, response, strlen(response), 0);
+                            break;
+                        }
+                        memset(buffer, 0, sizeof(buffer));
+                        memset(response, 0, sizeof(response));
                     }
                 }
-                fclose(fp);
-                if (found)
-                    strcpy(response, "Login successful.\n");
                 else
-                    strcpy(response, "Login failed.\n");
+                {
+                    printf("DEBUG: Unknown action: %s\n", action);
+                    fp = fopen("users.txt", "a+");
+                    if (!fp)
+                    {
+                        strcpy(response, "Server error.\n");
+                        send(new_socket, response, strlen(response), 0);
+                        write_server_log(client_ip, buffer, response);
+                        continue;
+                    }
+                    int found = 0;
+                    char line[256];
+                    rewind(fp);
+                    while (fgets(line, sizeof(line), fp))
+                    {
+                        char utype[16], uname[64], upwd[64];
+                        sscanf(line, "%[^|]|%[^|]|%[^|]", utype, uname, upwd);
+                        trim(utype);
+                        trim(uname);
+                        trim(upwd);
+                        if (strcmp(utype, role) == 0 && strcmp(uname, username) == 0 &&
+                            strcmp(upwd, password) == 0)
+                        {
+                            found = 1;
+                            break;
+                        }
+                    }
+                    fclose(fp);
+                    if (found)
+                        strcpy(response, "Login successful.\n");
+                    else
+                        strcpy(response, "Login failed.\n");
+                    send(new_socket, response, strlen(response), 0);
+                    write_server_log(client_ip, buffer, response);
+                }
+            }
+
+            else
+            {
+                strcpy(response, "Invalid request.\n");
                 send(new_socket, response, strlen(response), 0);
                 write_server_log(client_ip, buffer, response);
             }
-        } else if (strcmp(action, "signup") == 0) {
-            fp = fopen("users.txt", "a+");
-            if (!fp) {
-                strcpy(response, "Server error.\n");
+            memset(buffer, 0, sizeof(buffer));
+        }
+        else if (strcmp(action, "signup") == 0)
+        {
+            // printf("DEBUG: Handling signup for role %s\n", role);
+
+            // Parse signup with mobile included
+            // Format expected: "signup|role|username|password|mobile"
+            int parsed = sscanf(buffer, "%[^|]|%[^|]|%[^|]|%[^|]|%[^|]", action, role, username, password, mobile);
+
+            if (parsed != 5)
+            { // All five fields should be parsed after 'signup'
+                strcpy(response, "Invalid signup data format.\n");
+                send(new_socket, response, strlen(response), 0);
+                write_server_log(client_ip, buffer, response);
+                continue;
+            }
+
+            char id[16];
+            char data_filename[64];
+            FILE *data_fp;
+
+            if (strcmp(role, "employee") == 0)
+            {
+                data_fp = fopen("employee_data.txt", "r");
+                if (!data_fp)
+                {
+                    snprintf(id, sizeof(id), "E000001");
+                }
+                else
+                {
+                    char line[256];
+                    int max_num = 0;
+                    while (fgets(line, sizeof(line), data_fp))
+                    {
+                        char curr_id[16];
+                        sscanf(line, "%15[^|]", curr_id);
+                        if (curr_id[0] == 'E')
+                        {
+                            int num = atoi(curr_id + 1);
+                            if (num > max_num)
+                                max_num = num;
+                        }
+                    }
+                    fclose(data_fp);
+                    snprintf(id, sizeof(id), "E%06d", max_num + 1);
+                }
+                strcpy(data_filename, "employee_data.txt");
+            }
+            else if (strcmp(role, "manager") == 0)
+            {
+                data_fp = fopen("manager_data.txt", "r");
+                if (!data_fp)
+                {
+                    snprintf(id, sizeof(id), "M000001");
+                }
+                else
+                {
+                    char line[256];
+                    int max_num = 0;
+                    while (fgets(line, sizeof(line), data_fp))
+                    {
+                        char curr_id[16];
+                        sscanf(line, "%15[^|]", curr_id);
+                        if (curr_id[0] == 'M')
+                        {
+                            int num = atoi(curr_id + 1);
+                            if (num > max_num)
+                                max_num = num;
+                        }
+                    }
+                    fclose(data_fp);
+                    snprintf(id, sizeof(id), "M%06d", max_num + 1);
+                }
+                strcpy(data_filename, "manager_data.txt");
+            }
+            else
+            {
+                strcpy(response, "Invalid role for signup.\n");
+                send(new_socket, response, strlen(response), 0);
+                write_server_log(client_ip, buffer, response);
+                continue;
+            }
+
+            // Append user to users.txt
+            FILE *fp = fopen("users.txt", "a+");
+            if (!fp)
+            {
+                strcpy(response, "Server error opening users file.\n");
                 send(new_socket, response, strlen(response), 0);
                 write_server_log(client_ip, buffer, response);
                 continue;
             }
             fprintf(fp, "%s|%s|%s\n", role, username, password);
             fclose(fp);
-            strcpy(response, "Signup successful.\n");
-            send(new_socket, response, strlen(response), 0);
-            write_server_log(client_ip, buffer, response);
-        } else {
-            strcpy(response, "Invalid request.\n");
+
+            // Append role data to employee_data.txt or manager_data.txt
+            data_fp = fopen(data_filename, "a+");
+            if (!data_fp)
+            {
+                strcpy(response, "Server error opening role data file.\n");
+                send(new_socket, response, strlen(response), 0);
+                write_server_log(client_ip, buffer, response);
+                continue;
+            }
+            fprintf(data_fp, "%s|%s|%s\n", id, username, mobile);
+            fclose(data_fp);
+
+            snprintf(response, sizeof(response), "Signup successful. Your ID is %s\n", id);
             send(new_socket, response, strlen(response), 0);
             write_server_log(client_ip, buffer, response);
         }
-        memset(buffer, 0, sizeof(buffer));
+
+        close(new_socket);
     }
-    close(new_socket);
 }
 
-void *thread_func(void *arg) {
+void *thread_func(void *arg)
+{
     int new_socket = *(int *)arg;
     handle_client(new_socket);
     free(arg);
     return NULL;
 }
 
-int main() {
+int main()
+{
     int server_fd, new_socket;
     struct sockaddr_in address;
     int opt = 1;
     socklen_t addrlen = sizeof(address);
 
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+    {
         perror("Socket failed");
         exit(EXIT_FAILURE);
     }
@@ -338,18 +683,22 @@ int main() {
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(PORT);
 
-    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
+    {
         perror("Bind failed");
         exit(EXIT_FAILURE);
     }
-    if (listen(server_fd, 3) < 0) {
+    if (listen(server_fd, 3) < 0)
+    {
         perror("Listen");
         exit(EXIT_FAILURE);
     }
     printf("Server listening on port %d...\n", PORT);
 
-    while (1) {
-        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, &addrlen)) < 0) {
+    while (1)
+    {
+        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, &addrlen)) < 0)
+        {
             perror("Accept");
             exit(EXIT_FAILURE);
         }
