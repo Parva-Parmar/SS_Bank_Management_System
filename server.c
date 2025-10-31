@@ -9,6 +9,7 @@
 
 #include "customer.h"
 #include "employee.h"
+#include "admin.h"
 
 #define PORT 8080
 #define SERVER_LOG_FILE "server.log"
@@ -18,7 +19,7 @@
 #define MANAGER_FILE "manager_data.txt"
 
 pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
-char logged_in_username[64] = {0};  // store username after login
+char logged_in_username[64] = {0}; // store username after login
 
 void trim(char *str)
 {
@@ -334,6 +335,7 @@ void handle_client(int new_socket)
             }
             else if (strcmp(role, "employee") == 0)
             {
+                printf("here\n");
                 printf("DEBUG: Entered employee login branch for user %s\n", username);
                 int valid = validate_employee_login(username, password);
                 printf("DEBUG: validate_employee_login returned %d\n", valid);
@@ -341,6 +343,7 @@ void handle_client(int new_socket)
                 {
                     // After verifying user credentials
                     strcpy(logged_in_username, username);
+                    printf("Debug: logged_in_username = '%s'\n", logged_in_username);
                     printf("DEBUG: Employee login successful.\n");
                     strcpy(response, "Login successful.\n");
                     send(new_socket, response, strlen(response), 0);
@@ -351,13 +354,12 @@ void handle_client(int new_socket)
                         "Employee Menu:\n"
                         "1. Add New Customer\n"
                         "2. Modify Customer Details\n"
-                        "3. Process Loan Applications\n"
-                        "4. Approve Loan\n"
-                        "5. Reject Loan\n"
-                        "6. View Assigned Loan Applications\n"
-                        "7. View Customer Transactions\n"
-                        "8. Change Password\n"
-                        "9. Logout\n"
+                        "3. Approve Loan\n"
+                        "4. Reject Loan\n"
+                        "5. View Assigned Loan Applications\n"
+                        "6. View Customer Transactions\n"
+                        "7. Change Password\n"
+                        "8. Logout\n"
                         "Enter choice: \n";
 
                     while (1)
@@ -368,7 +370,36 @@ void handle_client(int new_socket)
                             break;
                         buffer[valread] = '\0';
                         int choice = atoi(buffer);
+                        char employee_id[16] = {0};
+                        FILE *fp = fopen("employee_data.txt", "r");
+                        if (!fp)
+                        {
+                            send(new_socket, "Error opening employee data file.\n", 34, 0);
+                            break;
+                        }
+                        char line[256];
+                        char username[64];
+                        strcpy(username, logged_in_username); // Use your logged-in username storage
+                        while (fgets(line, sizeof(line), fp))
+                        {
+                            char id[16], uname[64], mobile[32];
+                            if (sscanf(line, "%15[^|]|%63[^|]|%31[^\n]", id, uname, mobile) == 3)
+                            {
+                                if (strcmp(uname, username) == 0)
+                                {
+                                    strcpy(employee_id, id);
+                                    break;
+                                }
+                            }
+                        }
+                        fclose(fp);
 
+                        if (employee_id[0] == '\0')
+                        {
+                            send(new_socket, "Employee ID not found for user.\n", 32, 0);
+                            break;
+                        }
+                        printf("Debug: emp_id = '%s'\n", employee_id);
                         switch (choice)
                         {
                         case 1:
@@ -434,53 +465,25 @@ void handle_client(int new_socket)
                         case 2:
                             modify_customer_details(new_socket);
                             break;
-                        case 3: {
-                            char employee_id[16] = {0};
-                            FILE *fp = fopen("employee_data.txt", "r");
-                            if (!fp) {
-                                send(new_socket, "Error opening employee data file.\n", 34, 0);
-                                break;
-                            }
-                            char line[256];
-                            char username[64];
-                            
-                            // Replace this with your actual logged-in username variable
-                            // For instance, if you set it after login and store in a variable 'logged_in_username'
-                            strcpy(username, logged_in_username);
-                            
-                            while (fgets(line, sizeof(line), fp)) {
-                                char id[16], uname[64], mobile[32];
-                                if (sscanf(line, "%15[^|]|%63[^|]|%31[^\n]", id, uname, mobile) == 3) {
-                                    if (strcmp(uname, username) == 0) {
-                                        strcpy(employee_id, id);
-                                        break;
-                                    }
-                                }
-                            }
-                            fclose(fp);
-
-                            if (employee_id[0] == '\0') {
-                                send(new_socket, "Employee ID not found for user.\n", 32, 0);
-                                break;
-                            }
-
-                            process_loan_applications(new_socket, employee_id);
+                        case 3:
+                        {
+                            process_loan_applications1(new_socket, employee_id);
                             break;
                         }
                         case 4:
-                            approve_loan(new_socket);
+                            process_loan_applications2(new_socket, employee_id);
                             break;
                         case 5:
-                            reject_loan(new_socket);
+                            // reject_loan(new_socket, employee_id);
                             break;
                         case 6:
-                            view_assigned_loan_applications(new_socket);
+                            // view_assigned_loan_applications(new_socket);
                             break;
                         case 7:
-                            view_customer_transactions(new_socket);
+                            // view_customer_transactions(new_socket);
                             break;
                         case 8:
-                            change_password(new_socket);
+                            // change_password(new_socket);
                             break;
                         case 9:
                             strcpy(response, "Logging out...\n");
@@ -533,7 +536,210 @@ void handle_client(int new_socket)
                     write_server_log(client_ip, buffer, response);
                 }
             }
+            else if (strcmp(role, "admin") == 0)
+            {
+                // Validate admin login
+                if (validate_admin_login(username, password))
+                {
+                    strcpy(logged_in_username, username);
+                    strcpy(response, "Login successful.");
+                    send(new_socket, response, strlen(response), 0);
+                    write_server_log(client_ip, buffer, response);
 
+                    // Admin menu string
+                    const char *admin_menu =
+                        "Admin Menu:\n"
+                        "1. Add New Employee\n"
+                        "2. Modify User Details\n"
+                        "3. Change Password\n"
+                        "4. Change User Role\n"
+                        "5. Logout\n"
+                        "Enter choice: ";
+
+                    while (1)
+                    {
+                        send(new_socket, admin_menu, strlen(admin_menu), 0);
+
+                        int valread = recv(new_socket, buffer, sizeof(buffer) - 1, 0);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+                        int choice = atoi(buffer);
+
+                        switch (choice)
+                        {
+                        case 1:
+                        {
+                            // Add New Employee
+                            char new_role[16], new_username[64], new_password[64], new_mobile[32];
+                            // Send and receive data for new employee details (similarly handle input prompts and trimming)
+                            // Example:
+                            send(new_socket, "Enter role (employee/manager): ", 30, 0);
+                            recv(new_socket, new_role, sizeof(new_role) - 1, 0);
+                            trim(new_role);
+                            send(new_socket, "Enter username: ", 16, 0);
+                            recv(new_socket, new_username, sizeof(new_username) - 1, 0);
+                            trim(new_username);
+                            send(new_socket, "Enter password: ", 16, 0);
+                            recv(new_socket, new_password, sizeof(new_password) - 1, 0);
+                            trim(new_password);
+                            send(new_socket, "Enter mobile number: ", 21, 0);
+                            recv(new_socket, new_mobile, sizeof(new_mobile) - 1, 0);
+                            trim(new_mobile);
+
+                            int add_result = add_new_employee(new_role, new_username, new_password, new_mobile);
+                            if (add_result == 0)
+                            {
+                                strcpy(response, "New employee added successfully.\n");
+                            }
+                            else if (add_result == -2)
+                            {
+                                strcpy(response, "Username already exists.\n");
+                            }
+                            else
+                            {
+                                strcpy(response, "Failed to add new employee.\n");
+                            }
+                            send(new_socket, response, strlen(response), 0);
+                            write_server_log(client_ip, "Add New Employee", response);
+                            break;
+                        }
+                        case 2:
+                        {
+                            char user_type[16], username[64], new_password[64], new_mobile[32];
+                            const char *prompt = "Modify which user type? (customer/employee/manager): \n";
+                            send(new_socket, prompt, strlen(prompt), 0);
+                            recv(new_socket, user_type, sizeof(user_type) - 1, 0);
+                            trim(user_type);
+
+                            send(new_socket, "Enter username: ", 16, 0);
+                            recv(new_socket, username, sizeof(username) - 1, 0);
+                            trim(username);
+
+                            send(new_socket, "Enter new password or write 'NO' to keep unchanged: ", 53, 0);
+                            recv(new_socket, new_password, sizeof(new_password) - 1, 0);
+                            trim(new_password);
+
+                            send(new_socket, "Enter new mobile number or write 'NO' to keep unchanged: ", 58, 0);
+                            recv(new_socket, new_mobile, sizeof(new_mobile) - 1, 0);
+                            trim(new_mobile);
+
+                            // Check if admin typed NO to skip change
+                            if (strcasecmp(new_password, "NO") == 0)
+                            {
+                                new_password[0] = '\0'; // Treat as no change
+                            }
+                            if (strcasecmp(new_mobile, "NO") == 0)
+                            {
+                                new_mobile[0] = '\0';
+                            }
+
+                            int mod_result = modify_user_details(user_type, username, new_password, new_mobile);
+                            if (mod_result == 0)
+                            {
+                                strcpy(response, "User details updated successfully.\n");
+                            }
+                            else
+                            {
+                                strcpy(response, "Failed to update user details.\n");
+                            }
+                            send(new_socket, response, strlen(response), 0);
+                            write_server_log(client_ip, "Modify User Details", response);
+                            break;
+                        }
+                        case 3:
+                        {
+                            char username[64];
+                            char new_password[64];
+                            char response[256];
+
+                            // Send prompt for username
+                            const char *prompt1 = "Enter username to change password: ";
+                            send(new_socket, prompt1, strlen(prompt1), 0);
+                            int valread = recv(new_socket, username, sizeof(username) - 1, 0);
+                            if (valread <= 0)
+                                break;
+                            username[valread] = '\0';
+                            trim(username);
+
+                            // Send prompt for new password
+                            const char *prompt2 = "Enter new password: ";
+                            send(new_socket, prompt2, strlen(prompt2), 0);
+                            valread = recv(new_socket, new_password, sizeof(new_password) - 1, 0);
+                            if (valread <= 0)
+                                break;
+                            new_password[valread] = '\0';
+                            trim(new_password);
+
+                            // Call your admin_change_password function
+                            bool res = admin_change_password(username, new_password);
+
+                            if (res)
+                            {
+                                strcpy(response, "Password changed successfully.\n");
+                            }
+                            else
+                            {
+                                strcpy(response, "Failed to change password. User may not exist.\n");
+                            }
+
+                            send(new_socket, response, strlen(response), 0);
+                            write_server_log(client_ip, "Admin Change Password", response);
+                            break;
+                        }
+                        case 4:
+                        {
+                            char username[64];
+                            send(new_socket, "Enter username to change role: ", 30, 0);
+                            recv(new_socket, username, sizeof(username) - 1, 0);
+                            trim(username);
+
+                            int change_res = change_user_role(username);
+
+                            switch (change_res)
+                            {
+                            case 0:
+                                strcpy(response, "User role changed successfully.\n");
+                                break;
+                            case -1:
+                                strcpy(response, "System error occurred.\n");
+                                break;
+                            case -2:
+                                strcpy(response, "User not found.\n");
+                                break;
+                            case -3:
+                                strcpy(response, "Cannot change roles now: active loans exist.\n");
+                                break;
+                            case -4:
+                                strcpy(response, "Invalid user role.\n");
+                                break;
+                            default:
+                                strcpy(response, "Unknown error.\n");
+                            }
+
+                            send(new_socket, response, strlen(response), 0);
+                            write_server_log(client_ip, "Manage User Roles", response);
+                            break;
+                        }
+                        case 5:
+                            // Logout admin
+                            strcpy(response, "Logging out...\n");
+                            send(new_socket, response, strlen(response), 0);
+                            write_server_log(client_ip, "Logout", response);
+                            return; // End admin session
+                        default:
+                            send(new_socket, "Invalid choice, try again.\n", 26, 0);
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    strcpy(response, "Login failed.\n");
+                    send(new_socket, response, strlen(response), 0);
+                    write_server_log(client_ip, buffer, response);
+                }
+            }
             else
             {
                 strcpy(response, "Invalid request.\n");

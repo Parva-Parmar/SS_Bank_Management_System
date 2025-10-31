@@ -576,3 +576,411 @@ Request: login|employee|Emp1|emp1_1234
 Response: Login successful.
 
 
+[Thu Oct 30 15:00:42 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 15:01:34 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 15:02:39 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 15:05:08 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 15:05:55 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 15:06:29 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 15:07:45 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 15:10:21 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 15:17:06 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 15:24:13 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 15:29:31 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 19:12:37 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 19:13:26 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 19:17:19 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 19:23:23 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 20:06:55 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 20:11:46 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 20:29:31 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 20:35:56 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 20:38:07 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 20:45:07 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 20:50:05 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 20:50:47 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 21:06:36 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 21:13:31 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 21:14:14 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 21:17:53 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 21:24:15 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 21:25:08 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 21:47:02 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Thu Oct 30 21:47:56 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Fri Oct 31 10:48:09 2025] Client: Unknown
+Request: login|admin|AdminUser|adminpass
+Response: Login successful.
+
+[Fri Oct 31 10:48:46 2025] Client: Unknown
+Request: Add New Employee
+Response: New employee added successfully.
+
+
+[Fri Oct 31 10:52:47 2025] Client: Unknown
+Request: login|admin|AdminUser|adminpass
+Response: Login successful.
+
+[Fri Oct 31 10:53:08 2025] Client: Unknown
+Request: Add New Employee
+Response: New employee added successfully.
+
+
+[Fri Oct 31 10:53:49 2025] Client: Unknown
+Request: Add New Employee
+Response: New employee added successfully.
+
+
+[Fri Oct 31 11:01:50 2025] Client: Unknown
+Request: Logout
+Response: Logging out...
+
+
+[Fri Oct 31 11:02:19 2025] Client: Unknown
+Request: login|admin|AdminUser|adminpass
+Response: Login successful.
+
+[Fri Oct 31 11:02:50 2025] Client: Unknown
+Request: Add New Employee
+Response: Username already exists.
+
+
+[Fri Oct 31 11:03:22 2025] Client: Unknown
+Request: Add New Employee
+Response: New employee added successfully.
+
+
+[Fri Oct 31 11:04:05 2025] Client: Unknown
+Request: Add New Employee
+Response: New employee added successfully.
+
+
+[Fri Oct 31 11:04:44 2025] Client: Unknown
+Request: Add New Employee
+Response: New employee added successfully.
+
+
+[Fri Oct 31 11:05:28 2025] Client: Unknown
+Request: Add New Employee
+Response: New employee added successfully.
+
+
+[Fri Oct 31 11:13:03 2025] Client: Unknown
+Request: Logout
+Response: Logging out...
+
+
+[Fri Oct 31 11:13:46 2025] Client: Unknown
+Request: login|admin|AdminUser|adminpass
+Response: Login successful.
+
+[Fri Oct 31 11:14:08 2025] Client: Unknown
+Request: Add New Employee
+Response: New employee added successfully.
+
+
+[Fri Oct 31 11:14:44 2025] Client: Unknown
+Request: Add New Employee
+Response: New employee added successfully.
+
+
+[Fri Oct 31 11:52:43 2025] Client: Unknown
+Request: Logout
+Response: Logging out...
+
+
+[Fri Oct 31 12:07:41 2025] Client: Unknown
+Request: login|admin|AdminUser|adminpass
+Response: Login successful.
+
+[Fri Oct 31 12:08:03 2025] Client: Unknown
+Request: Modify User Details
+Response: Failed to update user details.
+
+
+[Fri Oct 31 12:08:15 2025] Client: Unknown
+Request: Logout
+Response: Logging out...
+
+
+[Fri Oct 31 12:15:08 2025] Client: Unknown
+Request: login|admin|AdminUser|adminpass
+Response: Login successful.
+
+[Fri Oct 31 12:15:59 2025] Client: Unknown
+Request: Modify User Details
+Response: User details updated successfully.
+
+
+[Fri Oct 31 12:17:03 2025] Client: Unknown
+Request: Modify User Details
+Response: Failed to update user details.
+
+
+[Fri Oct 31 12:17:16 2025] Client: Unknown
+Request: Logout
+Response: Logging out...
+
+
+[Fri Oct 31 12:21:16 2025] Client: Unknown
+Request: login|admin|AdminUser|adminpass
+Response: Login successful.
+
+[Fri Oct 31 12:21:52 2025] Client: Unknown
+Request: Modify User Details
+Response: User details updated successfully.
+
+
+[Fri Oct 31 12:25:37 2025] Client: Unknown
+Request: Modify User Details
+Response: User details updated successfully.
+
+
+[Fri Oct 31 12:26:16 2025] Client: Unknown
+Request: Modify User Details
+Response: User details updated successfully.
+
+
+[Fri Oct 31 12:26:24 2025] Client: Unknown
+Request: Logout
+Response: Logging out...
+
+
+[Fri Oct 31 13:45:04 2025] Client: Unknown
+Request: login|admin|AdminUser|adminpass
+Response: Login successful.
+
+[Fri Oct 31 13:45:27 2025] Client: Unknown
+Request: Manage User Roles
+Response: User role changed successfully.
+
+
+[Fri Oct 31 13:51:12 2025] Client: Unknown
+Request: Manage User Roles
+Response: User role changed successfully.
+
+
+[Fri Oct 31 13:51:42 2025] Client: Unknown
+Request: Manage User Roles
+Response: User role changed successfully.
+
+
+[Fri Oct 31 13:53:59 2025] Client: Unknown
+Request: Logout
+Response: Logging out...
+
+
+[Fri Oct 31 13:56:56 2025] Client: Unknown
+Request: login|admin|AdminUser|adminpass
+Response: Login successful.
+
+[Fri Oct 31 13:57:19 2025] Client: Unknown
+Request: Manage User Roles
+Response: User role changed successfully.
+
+
+[Fri Oct 31 13:57:25 2025] Client: Unknown
+Request: Manage User Roles
+Response: User role changed successfully.
+
+
+[Fri Oct 31 13:58:00 2025] Client: Unknown
+Request: Logout
+Response: Logging out...
+
+
+[Fri Oct 31 13:59:11 2025] Client: Unknown
+Request: login|admin|AdminUser|adminpass
+Response: Login successful.
+
+[Fri Oct 31 13:59:20 2025] Client: Unknown
+Request: Manage User Roles
+Response: User role changed successfully.
+
+
+[Fri Oct 31 13:59:44 2025] Client: Unknown
+Request: Manage User Roles
+Response: User role changed successfully.
+
+
+[Fri Oct 31 14:01:10 2025] Client: Unknown
+Request: Logout
+Response: Logging out...
+
+
+[Fri Oct 31 14:05:05 2025] Client: Unknown
+Request: login|admin|AdminUser|adminpass
+Response: Login successful.
+
+[Fri Oct 31 14:05:18 2025] Client: Unknown
+Request: Manage User Roles
+Response: User role changed successfully.
+
+
+[Fri Oct 31 14:05:44 2025] Client: Unknown
+Request: Manage User Roles
+Response: Cannot change roles now: active loans exist.
+
+
+[Fri Oct 31 14:06:18 2025] Client: Unknown
+Request: Manage User Roles
+Response: User role changed successfully.
+
+
+[Fri Oct 31 14:08:09 2025] Client: Unknown
+Request: Manage User Roles
+Response: User role changed successfully.
+
+
+[Fri Oct 31 14:08:20 2025] Client: Unknown
+Request: Manage User Roles
+Response: User role changed successfully.
+
+
+[Fri Oct 31 14:08:34 2025] Client: Unknown
+Request: Manage User Roles
+Response: User role changed successfully.
+
+
+[Fri Oct 31 14:08:52 2025] Client: Unknown
+Request: Logout
+Response: Logging out...
+
+
+[Fri Oct 31 14:19:40 2025] Client: Unknown
+Request: login|admin|AdminUser|adminpass
+Response: Login successful.
+
+[Fri Oct 31 14:19:58 2025] Client: Unknown
+Request: Admin Change Password
+Response: Password changed successfully.
+
+
+[Fri Oct 31 14:20:24 2025] Client: Unknown
+Request: Logout
+Response: Logging out...
+
+

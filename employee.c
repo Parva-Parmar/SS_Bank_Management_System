@@ -8,6 +8,12 @@
 #include <sys/types.h>   // For off_t and other types
 #include <sys/file.h>    // For flock
 #include <sys/socket.h>  // For send, read and sockets
+#include <netinet/tcp.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <arpa/inet.h>
 
 
 #define USERS_FILE "users.txt"
@@ -230,28 +236,28 @@ void modify_customer_details(int new_socket) {
     send(new_socket, "Customer details updated successfully.\n", 39, 0);
 }
 
-void process_loan_applications(int new_socket, const char *employee_id) {
-    FILE* fp = fopen("loans.txt", "r");
+void process_loan_applications1(int new_socket, const char *employee_id) {
+    // Disable Nagle's algorithm for immediate send
+    int flag = 1;
+    setsockopt(new_socket, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(flag));
+
+    // Load and send the list of loans
+    FILE *fp = fopen("loans.txt", "r");
     if (!fp) {
         send(new_socket, "Error opening loans file.\n", 26, 0);
         return;
     }
 
-    char line[512];
-    char list_buffer[4096];
+    char line[512], list_buffer[4096];
     snprintf(list_buffer, sizeof(list_buffer), "Loan Applications assigned to you:\n");
     size_t len = strlen(list_buffer);
 
     while (fgets(line, sizeof(line), fp)) {
-        // Remove trailing newline for accurate match
-        line[strcspn(line, "\n")] = 0;
-        size_t linelen = strlen(line);
-        size_t emp_id_len = strlen(employee_id);
-
-        if (linelen >= emp_id_len) {
-            // Check if line ends with employee_id
-            if (strcmp(line + linelen - emp_id_len, employee_id) == 0) {
-                if (len + strlen(line) + 2 < sizeof(list_buffer)) { // +2 for newline and safety
+        char loanID[32], username[64], status[32], empID[16];
+        double amount;
+        if (sscanf(line, "%[^|]|%[^|]|%lf|%[^|]|%s", loanID, username, &amount, status, empID) == 5) {
+            if (strcmp(empID, employee_id) == 0) {
+                if (len + strlen(line) + 2 < sizeof(list_buffer)) {
                     strcat(list_buffer, line);
                     strcat(list_buffer, "\n");
                     len += strlen(line) + 1;
@@ -261,47 +267,40 @@ void process_loan_applications(int new_socket, const char *employee_id) {
     }
     fclose(fp);
 
-    // No loans found message if list only contains header
     if (len == strlen("Loan Applications assigned to you:\n")) {
         strcat(list_buffer, "No loan applications found.\n");
     }
+
+    // Send loan list
     send(new_socket, list_buffer, strlen(list_buffer), 0);
 
+    // Send prompt
+    const char *prompt = "Enter loan ID to process or 'back' to return:\n";
+    send(new_socket, prompt, strlen(prompt), 0);
+
+    // Wait for client's input
     char buffer[128];
-    int valread = read(new_socket, buffer, sizeof(buffer) - 1);
-    if (valread <= 0) return;
-    buffer[valread] = '\0';
-    trim(buffer);
+    int rlen = read(new_socket, buffer, sizeof(buffer)-1);
+    if (rlen <= 0) return;
+    buffer[rlen] = '\0';
+    buffer[strcspn(buffer, "\n")] = 0; // trim newline
 
     if (strcmp(buffer, "back") == 0) {
         send(new_socket, "Returned to main menu.\n", 23, 0);
         return;
     }
 
-    // Rewrite loans.txt updating status of selected loan to "In-Process"
-    FILE* in_fp = fopen("loans.txt", "r");
-    if (!in_fp) {
-        send(new_socket, "Error reading loans file.\n", 26, 0);
-        return;
-    }
-
-    FILE* out_fp = fopen("loans.tmp", "w");
-    if (!out_fp) {
-        fclose(in_fp);
-        send(new_socket, "Error writing loans file.\n", 26, 0);
-        return;
-    }
-
-    bool found = false;
+    // Update loan status
+    FILE *in_fp = fopen("loans.txt", "r");
+    FILE *out_fp = fopen("loans.tmp", "w");
+    int found = 0;
     while (fgets(line, sizeof(line), in_fp)) {
-        char loanID[32], username[64], status[32];
+        char loanID[32], username[64], status[32], empID[16];
         double amount;
-
-        if (sscanf(line, "%[^|]|%[^|]|%lf|%s", loanID, username, &amount, status) == 4) {
+        if (sscanf(line, "%[^|]|%[^|]|%lf|%[^|]|%s", loanID, username, &amount, status, empID) == 5) {
             if (strcmp(loanID, buffer) == 0) {
-                // Mark loan as "In-Process"
-                fprintf(out_fp, "%s|%s|%.2lf|%s\n", loanID, username, amount, "In-Process");
-                found = true;
+                fprintf(out_fp, "%s|%s|%.2lf|%s|%s\n", loanID, username, amount, "Approved", empID);
+                found = 1;
             } else {
                 fputs(line, out_fp);
             }
@@ -309,6 +308,7 @@ void process_loan_applications(int new_socket, const char *employee_id) {
             fputs(line, out_fp);
         }
     }
+
     fclose(in_fp);
     fclose(out_fp);
 
@@ -322,24 +322,376 @@ void process_loan_applications(int new_socket, const char *employee_id) {
     send(new_socket, "Loan marked for processing.\n", 27, 0);
 }
 
+void process_loan_applications2(int new_socket, const char *employee_id) {
+    // Disable Nagle's algorithm for immediate send
+    int flag = 1;
+    setsockopt(new_socket, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(flag));
 
+    // Load and send the list of loans
+    FILE *fp = fopen("loans.txt", "r");
+    if (!fp) {
+        send(new_socket, "Error opening loans file.\n", 26, 0);
+        return;
+    }
 
-void approve_loan(int new_socket) {
-    // TODO: implement properly
+    char line[512], list_buffer[4096];
+    snprintf(list_buffer, sizeof(list_buffer), "Loan Applications assigned to you:\n");
+    size_t len = strlen(list_buffer);
+
+    while (fgets(line, sizeof(line), fp)) {
+        char loanID[32], username[64], status[32], empID[16];
+        double amount;
+        if (sscanf(line, "%[^|]|%[^|]|%lf|%[^|]|%s", loanID, username, &amount, status, empID) == 5) {
+            if (strcmp(empID, employee_id) == 0) {
+                if (len + strlen(line) + 2 < sizeof(list_buffer)) {
+                    strcat(list_buffer, line);
+                    strcat(list_buffer, "\n");
+                    len += strlen(line) + 1;
+                }
+            }
+        }
+    }
+    fclose(fp);
+
+    if (len == strlen("Loan Applications assigned to you:\n")) {
+        strcat(list_buffer, "No loan applications found.\n");
+    }
+
+    // Send loan list
+    send(new_socket, list_buffer, strlen(list_buffer), 0);
+
+    // Send prompt
+    const char *prompt = "Enter loan ID to process or 'back' to return:\n";
+    send(new_socket, prompt, strlen(prompt), 0);
+
+    // Wait for client's input
+    char buffer[128];
+    int rlen = read(new_socket, buffer, sizeof(buffer)-1);
+    if (rlen <= 0) return;
+    buffer[rlen] = '\0';
+    buffer[strcspn(buffer, "\n")] = 0; // trim newline
+
+    if (strcmp(buffer, "back") == 0) {
+        send(new_socket, "Returned to main menu.\n", 23, 0);
+        return;
+    }
+
+    // Update loan status
+    FILE *in_fp = fopen("loans.txt", "r");
+    FILE *out_fp = fopen("loans.tmp", "w");
+    int found = 0;
+    while (fgets(line, sizeof(line), in_fp)) {
+        char loanID[32], username[64], status[32], empID[16];
+        double amount;
+        if (sscanf(line, "%[^|]|%[^|]|%lf|%[^|]|%s", loanID, username, &amount, status, empID) == 5) {
+            if (strcmp(loanID, buffer) == 0) {
+                fprintf(out_fp, "%s|%s|%.2lf|%s|%s\n", loanID, username, amount, "Rejected", empID);
+                found = 1;
+            } else {
+                fputs(line, out_fp);
+            }
+        } else {
+            fputs(line, out_fp);
+        }
+    }
+
+    fclose(in_fp);
+    fclose(out_fp);
+
+    if (!found) {
+        send(new_socket, "Loan not found.\n", 15, 0);
+        remove("loans.tmp");
+        return;
+    }
+
+    rename("loans.tmp", "loans.txt");
+    send(new_socket, "Loan marked for processing.\n", 27, 0);
+}
+ 
+
+// approve 
+void approve_loan(int new_socket, const char *employee_id) {
+    // Disable Nagle's algorithm for immediate send
+    int flag = 1;
+    setsockopt(new_socket, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(flag));
+
+    // Load and send the list of loans
+    FILE *fp = fopen("loans.txt", "r");
+    if (!fp) {
+        send(new_socket, "Error opening loans file.\n", 26, 0);
+        return;
+    }
+
+    char line[512], list_buffer[4096];
+    snprintf(list_buffer, sizeof(list_buffer), "Loan Applications assigned to you:\n");
+    size_t len = strlen(list_buffer);
+
+    while (fgets(line, sizeof(line), fp)) {
+        char loanID[32], username[64], status[32], empID[16];
+        double amount;
+        if (sscanf(line, "%[^|]|%[^|]|%lf|%[^|]|%s", loanID, username, &amount, status, empID) == 5) {
+            if (strcmp(empID, employee_id) == 0) {
+                if (len + strlen(line) + 2 < sizeof(list_buffer)) {
+                    strcat(list_buffer, line);
+                    strcat(list_buffer, "\n");
+                    len += strlen(line) + 1;
+                }
+            }
+        }
+    }
+    fclose(fp);
+
+    if (len == strlen("Loan Applications assigned to you:\n")) {
+        strcat(list_buffer, "No loan applications found.\n");
+    }
+
+    // Send loan list
+    send(new_socket, list_buffer, strlen(list_buffer), 0);
+
+    // Send prompt
+    const char *prompt = "Enter loan ID to process or 'back' to return:\n";
+    send(new_socket, prompt, strlen(prompt), 0);
+
+    // Wait for client's input
+    char buffer[128];
+    int rlen = read(new_socket, buffer, sizeof(buffer)-1);
+    if (rlen <= 0) return;
+    buffer[rlen] = '\0';
+    buffer[strcspn(buffer, "\n")] = 0; // trim newline
+
+    if (strcmp(buffer, "back") == 0) {
+        send(new_socket, "Returned to main menu.\n", 23, 0);
+        return;
+    }
+
+    // Update loan status
+    FILE *in_fp = fopen("loans.txt", "r");
+    FILE *out_fp = fopen("loans.tmp", "w");
+    int found = 0;
+    while (fgets(line, sizeof(line), in_fp)) {
+        char loanID[32], username[64], status[32], empID[16];
+        double amount;
+        if (sscanf(line, "%[^|]|%[^|]|%lf|%[^|]|%s", loanID, username, &amount, status, empID) == 5) {
+            if (strcmp(loanID, buffer) == 0) {
+                fprintf(out_fp, "%s|%s|%.2lf|%s|%s\n", loanID, username, amount, "Approved", empID);
+                found = 1;
+            } else {
+                fputs(line, out_fp);
+            }
+        } else {
+            fputs(line, out_fp);
+        }
+    }
+
+    fclose(in_fp);
+    fclose(out_fp);
+
+    if (!found) {
+        send(new_socket, "Loan not found.\n", 15, 0);
+        remove("loans.tmp");
+        return;
+    }
+
+    rename("loans.tmp", "loans.txt");
+    send(new_socket, "Loan marked as Approved.\n", 27, 0);
 }
 
-void reject_loan(int new_socket) {
-    // TODO: implement properly
-}
 
-void view_assigned_loan_applications(int new_socket) {
-    // TODO: implement properly
-}
+// void approve_loan(int new_socket, const char *employee_id) {
+//     // Disable Nagle's algorithm to flush packets immediately
+//     int flag = 1;
+//     setsockopt(new_socket, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(flag));
 
-void view_customer_transactions(int new_socket) {
-    // TODO: implement properly
-}
+//     // Read loans assigned to the employee (regardless of their status)
+//     FILE *fp = fopen("loans.txt", "r");
+//     if (!fp) {
+//         send(new_socket, "Error opening loans file.\n", 26, 0);
+//         return;
+//     }
 
-void change_password(int new_socket) {
-    // TODO: implement properly
-}
+//     char line[512], list_buffer[4096];
+//     snprintf(list_buffer, sizeof(list_buffer), "Loans assigned to you:\n");
+//     size_t len = strlen(list_buffer);
+
+//     while (fgets(line, sizeof(line), fp)) {
+//         char loanID[32], username[64], status[32], empID[16];
+//         double amount;
+
+//         if (sscanf(line, "%31[^|]|%63[^|]|%lf|%31[^|]|%15s", loanID, username, &amount, status, empID) == 5) {
+//             if (strcmp(empID, employee_id) == 0) {
+//                 if (len + strlen(line) + 2 < sizeof(list_buffer)) {
+//                     strcat(list_buffer, line);
+//                     strcat(list_buffer, "\n");
+//                     len += strlen(line) + 1;
+//                 }
+//             }
+//         }
+//     }
+//     fclose(fp);
+
+//     if (len == strlen("Loans assigned to you:\n")) {
+//         strcat(list_buffer, "No loans assigned to you.\n");
+//     }
+
+//     send(new_socket, list_buffer, strlen(list_buffer), 0);
+
+//     const char *prompt = "Enter loan ID to approve or 'back' to return:\n";
+//     send(new_socket, prompt, strlen(prompt), 0);
+
+//     char buffer[128];
+//     int rlen = read(new_socket, buffer, sizeof(buffer) - 1);
+//     if (rlen <= 0) return;
+//     buffer[rlen] = 0;
+//     buffer[strcspn(buffer, "\n")] = 0;
+
+//     if (strcmp(buffer, "back") == 0) {
+//         send(new_socket, "Returned to employee menu.\n", 27, 0);
+//         return;
+//     }
+
+//     // Update loan status to Approved
+//     FILE *in_fp = fopen("loans.txt", "r");
+//     FILE *out_fp = fopen("loans.tmp", "w");
+//     if (!in_fp || !out_fp) {
+//         if (in_fp) fclose(in_fp);
+//         if (out_fp) fclose(out_fp);
+//         send(new_socket, "Error processing loans file.\n", 29, 0);
+//         return;
+//     }
+
+//     int found = 0;
+//     while (fgets(line, sizeof(line), in_fp)) {
+//         char loanID[32], username[64], status[32], empID[16];
+//         double amount;
+//         if (sscanf(line, "%31[^|]|%63[^|]|%lf|%31[^|]|%15s", loanID, username, &amount, status, empID) == 5) {
+//             if (strcmp(loanID, buffer) == 0 && strcmp(empID, employee_id) == 0) {
+//                 fprintf(out_fp, "%s|%s|%.2lf|%s|%s\n", loanID, username, amount, "Approved", empID);
+//                 found = 1;
+//             } else {
+//                 fputs(line, out_fp);
+//             }
+//         } else {
+//             fputs(line, out_fp);
+//         }
+//     }
+
+//     fclose(in_fp);
+//     fclose(out_fp);
+
+//     if (!found) {
+//         send(new_socket, "Loan not found or not assigned to you.\n", 38, 0);
+//         remove("loans.tmp");
+//         return;
+//     }
+
+//     if (rename("loans.tmp", "loans.txt") != 0) {
+//         send(new_socket, "Error updating loan status.\n", 27, 0);
+//         return;
+//     }
+
+//     send(new_socket, "Loan approved successfully.\n", 27, 0);
+// }
+
+
+
+
+
+// void reject_loan(int new_socket, const char *employee_id) {
+//     FILE *fp = fopen("loans.txt", "r");
+//     if (!fp) {
+//         send(new_socket, "Error opening loans file.\n", 26, 0);
+//         return;
+//     }
+
+//     char line[512], list_buffer[4096];
+//     snprintf(list_buffer, sizeof(list_buffer), "Loans In-Process assigned to you:\n");
+//     size_t len = strlen(list_buffer);
+
+//     while (fgets(line, sizeof(line), fp)) {
+//         char loanID[32], username[64], status[32], empID[16];
+//         double amount;
+//         if (sscanf(line, "%31[^|]|%63[^|]|%lf|%31[^|]|%15s", loanID, username, &amount, status, empID) == 5) {
+//             if (strcmp(empID, employee_id) == 0 && strcmp(status, "In-Process") == 0) {
+//                 if (len + strlen(line) + 2 < sizeof(list_buffer)) {
+//                     strcat(list_buffer, line);
+//                     strcat(list_buffer, "\n");
+//                     len += strlen(line) + 1;
+//                 }
+//             }
+//         }
+//     }
+//     fclose(fp);
+
+//     if (len == strlen("Loans In-Process assigned to you:\n")) {
+//         strcat(list_buffer, "No loans pending rejection.\n");
+//         send(new_socket, list_buffer, strlen(list_buffer), 0);
+//         return;
+//     }
+
+//     send(new_socket, list_buffer, strlen(list_buffer), 0);
+//     send(new_socket, "Enter loan ID to reject or 'back' to return:\n", 45, 0);
+
+//     char buffer[128];
+//     int rlen = read(new_socket, buffer, sizeof(buffer) - 1);
+//     if (rlen <= 0) return;
+//     buffer[rlen] = '\0';
+//     buffer[strcspn(buffer, "\n")] = 0;
+
+//     if (strcmp(buffer, "back") == 0) {
+//         send(new_socket, "Returned to employee menu.\n", 27, 0);
+//         return;
+//     }
+
+//     FILE *in_fp = fopen("loans.txt", "r");
+//     FILE *out_fp = fopen("loans.tmp", "w");
+//     if (!in_fp || !out_fp) {
+//         if (in_fp) fclose(in_fp);
+//         if (out_fp) fclose(out_fp);
+//         send(new_socket, "Error processing loans file.\n", 29, 0);
+//         return;
+//     }
+
+//     int found = 0;
+//     while (fgets(line, sizeof(line), in_fp)) {
+//         char loanID[32], username[64], status[32], empID[16];
+//         double amount;
+//         if (sscanf(line, "%31[^|]|%63[^|]|%lf|%31[^|]|%15s", loanID, username, &amount, status, empID) == 5) {
+//             if (strcmp(loanID, buffer) == 0 && strcmp(status, "In-Process") == 0 && strcmp(empID, employee_id) == 0) {
+//                 fprintf(out_fp, "%s|%s|%.2lf|%s|%s\n", loanID, username, amount, "Rejected", empID);
+//                 found = 1;
+//             } else {
+//                 fputs(line, out_fp);
+//             }
+//         } else {
+//             fputs(line, out_fp);
+//         }
+//     }
+
+//     fclose(in_fp);
+//     fclose(out_fp);
+
+//     if (!found) {
+//         send(new_socket, "Loan not found or not in In-Process status.\n", 44, 0);
+//         remove("loans.tmp");
+//         return;
+//     }
+
+//     if (rename("loans.tmp", "loans.txt") != 0) {
+//         send(new_socket, "Error updating loan status.\n", 27, 0);
+//         return;
+//     }
+
+//     send(new_socket, "Loan rejected successfully.\n", 27, 0);
+// }
+
+
+
+ 
+
+// void view_customer_transactions(int new_socket) {
+//     // TODO: implement properly
+// }
+
+// void change_password(int new_socket) {
+
+// }
