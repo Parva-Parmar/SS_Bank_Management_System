@@ -50,8 +50,7 @@ void showMainMenu()
 {
     printf("==== Banking System ====\n");
     printf("1. Login\n");
-    printf("2. Signup\n");
-    printf("3. Exit\n");
+    printf("2. Exit\n");
     printf("Enter choice: ");
 }
 
@@ -65,16 +64,6 @@ void showLoginMenu()
     printf("5. Exit to Main Menu\n");
     printf("Enter choice: ");
 }
-
-void showSignupMenu()
-{
-    printf("Signup as:\n");
-    printf("1. Manager\n");
-    printf("2. Employee\n");
-    printf("3. Exit to Main Menu\n");
-    printf("Enter choice: ");
-}
-
 int main()
 {
     int sock = 0;
@@ -110,7 +99,7 @@ int main()
         if (main_choice == -1)
             break;
 
-        if (main_choice == 3)
+        if (main_choice == 2)
         {
             send(sock, "exit", 4, 0);
             printf("Goodbye!\n");
@@ -189,25 +178,35 @@ int main()
                         printf("%s", buffer);
                     }
                     else if (cust_choice == 4)
-                    { // Transfer Funds
-                        // Prompt recipient username
+                    {
+                        // Prompt for sender's (your) account number
                         valread = read(sock, buffer, 1024);
                         buffer[valread] = '\0';
                         printf("%s", buffer);
 
-                        char recipient[64];
-                        fgets(recipient, sizeof(recipient), stdin);
-                        recipient[strcspn(recipient, "\n")] = 0;
-                        send(sock, recipient, strlen(recipient), 0);
+                        char sender_account[64];
+                        fgets(sender_account, sizeof(sender_account), stdin);
+                        sender_account[strcspn(sender_account, "\n")] = 0;
+                        send(sock, sender_account, strlen(sender_account), 0);
 
-                        // Prompt amount
+                        // Prompt for recipient's account number
+                        valread = read(sock, buffer, 1024);
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+
+                        char recipient_account[64];
+                        fgets(recipient_account, sizeof(recipient_account), stdin);
+                        recipient_account[strcspn(recipient_account, "\n")] = 0;
+                        send(sock, recipient_account, strlen(recipient_account), 0);
+
+                        // Prompt for transfer amount
                         valread = read(sock, buffer, 1024);
                         buffer[valread] = '\0';
                         printf("%s", buffer);
 
                         float transfer_amount;
                         scanf("%f", &transfer_amount);
-                        getchar();
+                        getchar(); // consume newline
                         char amount_str[32];
                         snprintf(amount_str, sizeof(amount_str), "%.2f", transfer_amount);
                         send(sock, amount_str, strlen(amount_str), 0);
@@ -217,6 +216,7 @@ int main()
                         buffer[valread] = '\0';
                         printf("%s", buffer);
                     }
+
                     else if (cust_choice == 5)
                     {
                         // Wait for server prompt
@@ -290,6 +290,28 @@ int main()
                             buffer[valread] = '\0';
                             printf("%s", buffer);
                         }
+                    }
+                    else if (cust_choice == 9)
+                    {
+                        char buffer[1024];
+                        int valread;
+
+                        // Read logout success message from server
+                        valread = read(sock, buffer, sizeof(buffer) - 1);
+                        if (valread <= 0)
+                        {
+                            printf("Disconnected from server.\n");
+                            break;
+                        }
+                        buffer[valread] = '\0';
+                        printf("%s", buffer); // prints "Logged out successfully.\n"
+
+                        // Connection will be closed by the server, so client should close socket
+                        close(sock);
+
+                        // Exit client or prompt for login again based on your app flow
+                        exit(0); // or return to login prompt loop
+                        break;
                     }
                     else
                     {
@@ -609,16 +631,26 @@ int main()
                     }
                     case 8:
                     {
-                        // Logout or other functionality
+                        char buffer[1024];
+                        int valread;
+
+                        // Read logout success message from server
+                        valread = read(sock, buffer, sizeof(buffer) - 1);
+                        if (valread <= 0)
+                        {
+                            printf("Disconnected from server.\n");
+                            break;
+                        }
+                        buffer[valread] = '\0';
+                        printf("%s", buffer); // prints "Logged out successfully.\n"
+
+                        // Connection will be closed by the server, so client should close socket
+                        close(sock);
+
+                        // Exit client or prompt for login again based on your app flow
+                        exit(0); // or return to login prompt loop
                         break;
                     }
-
-                    case 9:
-                    {
-                        printf("Logging out...\n");
-                        break;
-                    }
-
                     default:
                     {
                         valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
@@ -1081,61 +1113,6 @@ int main()
                     }
                 }
             }
-        }
-        else if (main_choice == 2)
-        {
-            showSignupMenu();
-            int role_choice;
-            if (scanf("%d", &role_choice) != 1)
-            {
-                while (getchar() != '\n')
-                    ; // clear stdin
-                continue;
-            }
-            while (getchar() != '\n')
-                ; // consume leftover newline
-
-            if (role_choice == 3)
-                continue; // exit to main menu
-            if (role_choice < 1 || role_choice > 3)
-            {
-                printf("Invalid choice.\n");
-                continue;
-            }
-
-            char username[64], password[64], mobile[32];
-            printf("Enter Username: ");
-            if (!fgets(username, sizeof(username), stdin))
-                break;
-            username[strcspn(username, "\n")] = 0;
-            trim(username);
-
-            printf("Enter Password: ");
-            if (!fgets(password, sizeof(password), stdin))
-                break;
-            password[strcspn(password, "\n")] = 0;
-            trim(password);
-
-            printf("Enter Mobile Number: ");
-            if (!fgets(mobile, sizeof(mobile), stdin))
-                break;
-            mobile[strcspn(mobile, "\n")] = 0;
-            trim(mobile);
-
-            // roles array should have indices for employee=1 and manager=2 as per your code
-            sprintf(buffer, "signup|%s|%s|%s|%s", roles[role_choice], username, password, mobile);
-            send(sock, buffer, strlen(buffer), 0);
-
-            // Read full response including assigned ID from server
-            int valread = read(sock, buffer, sizeof(buffer) - 1);
-            if (valread <= 0)
-            {
-                printf("Disconnected from server.\n");
-                break;
-            }
-            buffer[valread] = '\0';
-
-            printf("Server: %s\n", buffer);
         }
         else
         {

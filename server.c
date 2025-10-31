@@ -13,6 +13,11 @@
 #include "manager.h"
 #include "admin.h"
 
+#define MAX_USERS 100
+char active_users[MAX_USERS][64];
+int active_user_count = 0;
+pthread_mutex_t active_users_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 #define PORT 8080
 #define SERVER_LOG_FILE "server.log"
 #define USERS_FILE "users.txt"
@@ -22,6 +27,59 @@
 
 pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 char logged_in_username[64] = {0}; // store username after login
+
+int is_user_logged_in(const char *username)
+{
+    int i, found = 0;
+    pthread_mutex_lock(&active_users_mutex);
+    for (i = 0; i < active_user_count; i++)
+    {
+        if (strcmp(active_users[i], username) == 0)
+        {
+            found = 1;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&active_users_mutex);
+    return found;
+}
+
+int add_active_user(const char *username)
+{
+    pthread_mutex_lock(&active_users_mutex);
+    if (active_user_count >= MAX_USERS)
+    { // no space
+        pthread_mutex_unlock(&active_users_mutex);
+        return -1;
+    }
+    strcpy(active_users[active_user_count++], username);
+    pthread_mutex_unlock(&active_users_mutex);
+    return 0;
+}
+
+// Call this on user logout or disconnect
+
+void remove_active_user(const char *username)
+{
+    int i;
+    pthread_mutex_lock(&active_users_mutex);
+    for (i = 0; i < active_user_count; i++)
+    {
+        if (strcmp(active_users[i], username) == 0)
+        {
+            // Replace with last user to keep array compact
+            strcpy(active_users[i], active_users[active_user_count - 1]);
+            active_user_count--;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&active_users_mutex);
+}
+void handle_user_logout(const char *username)
+{
+    remove_active_user(username);
+    // Optional: additional cleanup if needed
+}
 
 void trim(char *str)
 {
@@ -108,6 +166,13 @@ void handle_client(int new_socket)
         printf("DEBUG: Parsed values -> action: [%s], role: [%s], username: [%s], password: [%s], mobile: [%s]\n", action, role, username, password, mobile);
         FILE *fp = NULL;
         printf("DEBUG: Checking role = %s\n", role);
+        if (is_user_logged_in(username))
+        {
+            char *msg = "User already logged in from another terminal.\n";
+            send(new_socket, msg, strlen(msg), 0);
+            close(new_socket);
+            pthread_exit(NULL);
+        }
         if (strcmp(action, "login") == 0)
         {
             if (strcmp(role, "customer") == 0)
@@ -115,6 +180,13 @@ void handle_client(int new_socket)
                 printf("DEBUG: Handling customer login\n");
                 if (validate_customer_login(username, password))
                 {
+                    if (add_active_user(username) != 0)
+                    {
+                        char *msg = "Maximum active users reached. Try again later.\n";
+                        send(new_socket, msg, strlen(msg), 0);
+                        close(new_socket);
+                        pthread_exit(NULL);
+                    }
                     strcpy(response, "Login successful.\n");
                     send(new_socket, response, strlen(response), 0);
                     write_server_log(client_ip, buffer, response);
@@ -130,7 +202,6 @@ void handle_client(int new_socket)
                         "7. Add Feedback\n"
                         "8. View Transaction History\n"
                         "9. Logout\n"
-                        "10. Exit\n"
                         "Enter choice: ";
 
                     while (1)
@@ -195,8 +266,9 @@ void handle_client(int new_socket)
                         }
                         case 4:
                         { // Transfer Funds
-                            // Ask for recipient username
-                            char prompt[] = "Enter recipient username: ";
+
+                            // Ask for sender's account number
+                            char prompt[64] = "Enter your account number: ";
                             send(new_socket, prompt, strlen(prompt), 0);
 
                             int len = read(new_socket, buffer, sizeof(buffer) - 1);
@@ -204,8 +276,20 @@ void handle_client(int new_socket)
                                 break;
                             buffer[len] = '\0';
                             trim(buffer);
-                            char recipient[64];
-                            strcpy(recipient, buffer);
+                            char sender_account[64];
+                            strcpy(sender_account, buffer);
+
+                            // Ask for recipient account number
+                            strcpy(prompt, "Enter recipient account number: ");
+                            send(new_socket, prompt, strlen(prompt), 0);
+
+                            len = read(new_socket, buffer, sizeof(buffer) - 1);
+                            if (len <= 0)
+                                break;
+                            buffer[len] = '\0';
+                            trim(buffer);
+                            char recipient_account[64];
+                            strcpy(recipient_account, buffer);
 
                             // Ask for transfer amount
                             strcpy(prompt, "Enter transfer amount: ");
@@ -217,15 +301,16 @@ void handle_client(int new_socket)
                             buffer[len] = '\0';
                             float amount = atof(buffer);
 
-                            bool success = transfer_funds(username, recipient, amount);
+                            bool success = transfer_funds_with_account(sender_account, recipient_account, amount);
 
                             if (success)
                                 strcpy(response, "Transfer successful.\n");
                             else
-                                strcpy(response, "Transfer failed. Check recipient or insufficient funds.\n");
+                                strcpy(response, "Transfer failed. Check account numbers or insufficient funds.\n");
 
                             send(new_socket, response, strlen(response), 0);
                             write_server_log(client_ip, "Transfer Funds", response);
+
                             break;
                         }
                         case 5:
@@ -313,11 +398,18 @@ void handle_client(int new_socket)
                             break;
                         }
                         case 9:
-                        case 10:
-                            strcpy(response, "Logging out...\n");
-                            send(new_socket, response, strlen(response), 0);
-                            write_server_log(client_ip, "Logout or Exit", response);
-                            return;
+                        {
+                            // Assume username stored per client session
+                            handle_user_logout(username);
+
+                            // Send logout success message
+                            char *msg = "Logged out successfully.\n";
+                            send(new_socket, msg, strlen(msg), 0);
+
+                            // Close socket and terminate thread/session handling below
+                            close(new_socket);
+                            pthread_exit(NULL);
+                        }
                         default:
                             strcpy(response, "Functionality not yet implemented.\n");
                             send(new_socket, response, strlen(response), 0);
@@ -337,13 +429,20 @@ void handle_client(int new_socket)
             }
             else if (strcmp(role, "employee") == 0)
             {
-                printf("here\n");
+
                 printf("DEBUG: Entered employee login branch for user %s\n", username);
                 int valid = validate_employee_login(username, password);
                 printf("DEBUG: validate_employee_login returned %d\n", valid);
                 if (valid)
                 {
                     // After verifying user credentials
+                    if (add_active_user(username) != 0)
+        {
+            char *msg = "Maximum active users reached. Try again later.\n";
+            send(new_socket, msg, strlen(msg), 0);
+            close(new_socket);
+            pthread_exit(NULL);
+        }
                     strcpy(logged_in_username, username);
                     printf("Debug: logged_in_username = '%s'\n", logged_in_username);
                     printf("DEBUG: Employee login successful.\n");
@@ -807,13 +906,18 @@ void handle_client(int new_socket)
                         }
 
                         case 8:
-                            // change_password(new_socket);
-                            break;
-                        case 9:
-                            strcpy(response, "Logging out...\n");
-                            send(new_socket, response, strlen(response), 0);
-                            write_server_log(client_ip, "Logout", response);
-                            return; // Exit loop and finish session for employee
+                        {
+                            // Assume username stored per client session
+                            handle_user_logout(username);
+
+                            // Send logout success message
+                            char *msg = "Logged out successfully.\n";
+                            send(new_socket, msg, strlen(msg), 0);
+
+                            // Close socket and terminate thread/session handling below
+                            close(new_socket);
+                            pthread_exit(NULL);
+                        }
                         default:
                             strcpy(response, "Invalid choice. Please try again.\n");
                             send(new_socket, response, strlen(response), 0);
@@ -865,6 +969,13 @@ void handle_client(int new_socket)
                 // Validate manager login
                 if (validate_manager_login(username, password))
                 {
+                    if (add_active_user(username) != 0)
+        {
+            char *msg = "Maximum active users reached. Try again later.\n";
+            send(new_socket, msg, strlen(msg), 0);
+            close(new_socket);
+            pthread_exit(NULL);
+        }
                     strcpy(logged_in_username, username);
                     strcpy(response, "Login successful.");
                     send(new_socket, response, strlen(response), 0);
@@ -1088,11 +1199,18 @@ void handle_client(int new_socket)
                         }
 
                         case 5:
-                            // Logout manager
-                            strcpy(response, "Logging out...\n");
-                            send(new_socket, response, strlen(response), 0);
-                            write_server_log(client_ip, "Logout", response);
-                            return; // End manager session
+                        {
+                            // Assume username stored per client session
+                            handle_user_logout(username);
+
+                            // Send logout success message
+                            char *msg = "Logged out successfully.\n";
+                            send(new_socket, msg, strlen(msg), 0);
+
+                            // Close socket and terminate thread/session handling below
+                            close(new_socket);
+                            pthread_exit(NULL);
+                        }
                         default:
                             send(new_socket, "Invalid choice, try again.\n", 26, 0);
                             break;
@@ -1111,6 +1229,13 @@ void handle_client(int new_socket)
                 // Validate admin login
                 if (validate_admin_login(username, password))
                 {
+                    if (add_active_user(username) != 0)
+        {
+            char *msg = "Maximum active users reached. Try again later.\n";
+            send(new_socket, msg, strlen(msg), 0);
+            close(new_socket);
+            pthread_exit(NULL);
+        }
                     strcpy(logged_in_username, username);
                     strcpy(response, "Login successful.");
                     send(new_socket, response, strlen(response), 0);
@@ -1292,11 +1417,18 @@ void handle_client(int new_socket)
                             break;
                         }
                         case 5:
-                            // Logout admin
-                            strcpy(response, "Logging out...\n");
-                            send(new_socket, response, strlen(response), 0);
-                            write_server_log(client_ip, "Logout", response);
-                            return; // End admin session
+                        {
+                            // Assume username stored per client session
+                            handle_user_logout(username);
+
+                            // Send logout success message
+                            char *msg = "Logged out successfully.\n";
+                            send(new_socket, msg, strlen(msg), 0);
+
+                            // Close socket and terminate thread/session handling below
+                            close(new_socket);
+                            pthread_exit(NULL);
+                        }
                         default:
                             send(new_socket, "Invalid choice, try again.\n", 26, 0);
                             break;
@@ -1318,117 +1450,6 @@ void handle_client(int new_socket)
             }
             memset(buffer, 0, sizeof(buffer));
         }
-        else if (strcmp(action, "signup") == 0)
-        {
-            // printf("DEBUG: Handling signup for role %s\n", role);
-
-            // Parse signup with mobile included
-            // Format expected: "signup|role|username|password|mobile"
-            int parsed = sscanf(buffer, "%[^|]|%[^|]|%[^|]|%[^|]|%[^|]", action, role, username, password, mobile);
-
-            if (parsed != 5)
-            { // All five fields should be parsed after 'signup'
-                strcpy(response, "Invalid signup data format.\n");
-                send(new_socket, response, strlen(response), 0);
-                write_server_log(client_ip, buffer, response);
-                continue;
-            }
-
-            char id[16];
-            char data_filename[64];
-            FILE *data_fp;
-
-            if (strcmp(role, "employee") == 0)
-            {
-                data_fp = fopen("employee_data.txt", "r");
-                if (!data_fp)
-                {
-                    snprintf(id, sizeof(id), "E000001");
-                }
-                else
-                {
-                    char line[256];
-                    int max_num = 0;
-                    while (fgets(line, sizeof(line), data_fp))
-                    {
-                        char curr_id[16];
-                        sscanf(line, "%15[^|]", curr_id);
-                        if (curr_id[0] == 'E')
-                        {
-                            int num = atoi(curr_id + 1);
-                            if (num > max_num)
-                                max_num = num;
-                        }
-                    }
-                    fclose(data_fp);
-                    snprintf(id, sizeof(id), "E%06d", max_num + 1);
-                }
-                strcpy(data_filename, "employee_data.txt");
-            }
-            else if (strcmp(role, "manager") == 0)
-            {
-                data_fp = fopen("manager_data.txt", "r");
-                if (!data_fp)
-                {
-                    snprintf(id, sizeof(id), "M000001");
-                }
-                else
-                {
-                    char line[256];
-                    int max_num = 0;
-                    while (fgets(line, sizeof(line), data_fp))
-                    {
-                        char curr_id[16];
-                        sscanf(line, "%15[^|]", curr_id);
-                        if (curr_id[0] == 'M')
-                        {
-                            int num = atoi(curr_id + 1);
-                            if (num > max_num)
-                                max_num = num;
-                        }
-                    }
-                    fclose(data_fp);
-                    snprintf(id, sizeof(id), "M%06d", max_num + 1);
-                }
-                strcpy(data_filename, "manager_data.txt");
-            }
-            else
-            {
-                strcpy(response, "Invalid role for signup.\n");
-                send(new_socket, response, strlen(response), 0);
-                write_server_log(client_ip, buffer, response);
-                continue;
-            }
-
-            // Append user to users.txt
-            FILE *fp = fopen("users.txt", "a+");
-            if (!fp)
-            {
-                strcpy(response, "Server error opening users file.\n");
-                send(new_socket, response, strlen(response), 0);
-                write_server_log(client_ip, buffer, response);
-                continue;
-            }
-            fprintf(fp, "%s|%s|%s\n", role, username, password);
-            fclose(fp);
-
-            // Append role data to employee_data.txt or manager_data.txt
-            data_fp = fopen(data_filename, "a+");
-            if (!data_fp)
-            {
-                strcpy(response, "Server error opening role data file.\n");
-                send(new_socket, response, strlen(response), 0);
-                write_server_log(client_ip, buffer, response);
-                continue;
-            }
-            fprintf(data_fp, "%s|%s|%s\n", id, username, mobile);
-            fclose(data_fp);
-
-            snprintf(response, sizeof(response), "Signup successful. Your ID is %s\n", id);
-            send(new_socket, response, strlen(response), 0);
-            write_server_log(client_ip, buffer, response);
-        }
-
         close(new_socket);
     }
 }

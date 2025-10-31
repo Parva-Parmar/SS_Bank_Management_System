@@ -19,3 +19,4 @@ Parva|Deposit|500.00|Wed Oct 29 15:59:21 2025|Deposit to account
 Parva|Password Change|0.00|Wed Oct 29 15:59:37 2025|Changed password
 Dholu|Deposit|500.00|Thu Oct 30 00:20:10 2025|Deposit to account
 Dholu|Deposit|333.00|Thu Oct 30 00:20:19 2025|Deposit to account
+cust1|Deposit|500.00|Fri Oct 31 19:56:40 2025|Deposit to account

@@ -15,6 +15,6 @@ bool apply_for_loan(const char *username, float amount);
 bool customer_change_password(const char *username, const char *new_password);
 bool add_feedback(const char *username, const char *feedback);
 bool get_transaction_history(const char *username, char *output_buffer, size_t buf_size);
-
+bool transfer_funds_with_account(const char *from_account, const char *to_account, float amount);
 
 #endif

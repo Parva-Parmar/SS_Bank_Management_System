@@ -1238,3 +1238,41 @@ Request: login|employee|Emp1|emp1_3333
 Response: Login successful.
 
 
+[Fri Oct 31 19:54:10 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Fri Oct 31 19:54:12 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 0.00
+
+
+[Fri Oct 31 19:56:32 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Fri Oct 31 19:56:40 2025] Client: Unknown
+Request: Deposit Money
+Response: Deposit successful.
+
+
+[Fri Oct 31 19:56:42 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 500.00
+
+
+[Fri Oct 31 21:17:55 2025] Client: Unknown
+Request: login|admin|AdminUser|passadmin
+Response: Login successful.
+
+[Fri Oct 31 21:19:23 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Fri Oct 31 21:20:12 2025] Client: Unknown
+Request: login|admin|AdminUser|passadmin
+Response: Login successful.
+
