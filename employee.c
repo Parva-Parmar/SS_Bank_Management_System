@@ -14,7 +14,9 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
-
+#include "filelock.h"
+#include "utils.h"
+#include "filelock.h"
 
 #define USERS_FILE "users.txt"
 #define CUSTOMER_DATA_FILE "customer_data.txt"
@@ -44,197 +46,322 @@ int validate_employee_login(const char *username, const char *password) {
 int add_new_customer(const char *username, const char *password, const char *account_number, const char *mobile) {
     char buffer[256];
 
-    // Check if username exists in USERS_FILE
+    // Check if username exists in USERS_FILE (read lock)
     FILE *fp = fopen(USERS_FILE, "r");
     if (!fp) return -1;
+
+    int fd = fileno(fp);
+    if (lock_file(fd, F_RDLCK) < 0) {
+        fclose(fp);
+        return -1;
+    }
+
     while (fgets(buffer, sizeof(buffer), fp)) {
         char role[32], file_user[64], file_pass[64];
         sscanf(buffer, "%31[^|]|%63[^|]|%63[^\n]", role, file_user, file_pass);
         if (strcmp(file_user, username) == 0) {
+            unlock_file(fd);
             fclose(fp);
             return -2;  // Username exists
         }
     }
+
+    unlock_file(fd);
     fclose(fp);
 
-    // Append to USERS_FILE
+    // Append to USERS_FILE (write lock)
     fp = fopen(USERS_FILE, "a");
     if (!fp) return -1;
+
+    fd = fileno(fp);
+    if (lock_file(fd, F_WRLCK) < 0) {
+        fclose(fp);
+        return -1;
+    }
+
     fprintf(fp, "customer|%s|%s\n", username, password);
+
+    fflush(fp);
+    unlock_file(fd);
     fclose(fp);
 
-    // Append full detailed customer data
+    // Append full detailed customer data (write lock)
     fp = fopen(CUSTOMER_DATA_FILE, "a");
     if (!fp) return -1;
-    fprintf(fp, "%s|%s|%s|%.2f|%s\n", username, account_number, mobile, 0.00, "NO_LOAN");
+
+    fd = fileno(fp);
+    if (lock_file(fd, F_WRLCK) < 0) {
+        fclose(fp);
+        return -1;
+    }
+
+    fprintf(fp, "%s|%s|%s|%.2f|%s\n", username, account_number, mobile, 0.00, "Active");
+
+    fflush(fp);
+    unlock_file(fd);
     fclose(fp);
 
     return 0;
 }
 
-void modify_customer_details(int new_socket) {
-    char buffer[1024];
-    int valread = 0;
-    char input[128];
-    char account_number_to_modify[16];
+int modify_customer_details(const char *username, const char *new_password, const char *new_mobile) {
+    bool password_updated = false;
+    bool mobile_updated = false;
 
-    // 1. Ask for account number to modify
-    send(new_socket, "Enter account number of customer to modify:\n", 43, 0);
-    valread = read(new_socket, account_number_to_modify, sizeof(account_number_to_modify) - 1);
-    if (valread <= 0) return;
-    account_number_to_modify[valread] = '\0';
-    trim(account_number_to_modify);
+    // Update password in users.txt if new_password is not empty
+    if (new_password && strlen(new_password) > 0) {
+        FILE *fp = fopen("users.txt", "r+");
+        if (!fp) return -1;
 
-    // 2. Read all customers into memory from customer_data.txt
-    FILE *fp = fopen(CUSTOMER_DATA_FILE, "r");
-    if (!fp) {
-        send(new_socket, "Error opening customer data file.\n", 34, 0);
-        return;
-    }
-
-    typedef struct {
-        char username[64];
-        char account_number[16];
-        char mobile[16];
-        float balance;
-        char loan_status[32];
-    } customer_t;
-
-    customer_t customers[1000];
-    size_t count = 0;
-    bool found = false;
-    char line[256];
-
-    while (fgets(line, sizeof(line), fp) && count < 1000) {
-        if (sscanf(line, "%63[^|]|%15[^|]|%15[^|]|%f|%31s",
-                   customers[count].username,
-                   customers[count].account_number,
-                   customers[count].mobile,
-                   &customers[count].balance,
-                   customers[count].loan_status) == 5) {
-            if (strcmp(customers[count].account_number, account_number_to_modify) == 0) {
-                found = true;
-            }
-            count++;
-        }
-    }
-    fclose(fp);
-
-    if (!found) {
-        send(new_socket, "Account number not found.\n", 26, 0);
-        return;
-    }
-
-    // 3. Ask if mobile number should be updated
-    send(new_socket, "Update mobile number? (yes/no):\n", 33, 0);
-    valread = read(new_socket, buffer, sizeof(buffer) - 1);
-    if (valread <= 0) return;
-    buffer[valread] = '\0';
-    trim(buffer);
-
-    if (strcasecmp(buffer, "yes") == 0 || strcasecmp(buffer, "y") == 0) {
-        send(new_socket, "Enter new mobile number:\n", 24, 0);
-        valread = read(new_socket, buffer, sizeof(buffer) - 1);
-        if (valread <= 0) return;
-        buffer[valread] = '\0';
-        trim(buffer);
-
-        // Update mobile in memory
-        for (size_t i = 0; i < count; ++i) {
-            if (strcmp(customers[i].account_number, account_number_to_modify) == 0) {
-                strncpy(customers[i].mobile, buffer, sizeof(customers[i].mobile) - 1);
-                customers[i].mobile[sizeof(customers[i].mobile)-1] = '\0';
-                break;
-            }
-        }
-    }
-
-    // 4. Ask if password should be updated
-    send(new_socket, "Update password? (yes/no):\n", 28, 0);
-    valread = read(new_socket, buffer, sizeof(buffer) - 1);
-    if (valread <= 0) return;
-    buffer[valread] = '\0';
-    trim(buffer);
-
-    if (strcasecmp(buffer, "yes") == 0 || strcasecmp(buffer, "y") == 0) {
-        char username[64];
-
-        // Find username by account number
-        for (size_t i = 0; i < count; ++i) {
-            if (strcmp(customers[i].account_number, account_number_to_modify) == 0) {
-                strncpy(username, customers[i].username, sizeof(username) - 1);
-                username[sizeof(username)-1] = '\0';
-                break;
-            }
+        int fd = fileno(fp);
+        if (lock_file(fd, F_WRLCK) < 0) {
+            fclose(fp);
+            return -1;
         }
 
-        send(new_socket, "Enter new password:\n", 20, 0);
-        valread = read(new_socket, buffer, sizeof(buffer) - 1);
-        if (valread <= 0) return;
-        buffer[valread] = '\0';
-        trim(buffer);
-
-        // Update password in users.txt file
-        // Read all users
-        FILE *ufp = fopen(USERS_FILE, "r");
-        if (!ufp) {
-            send(new_socket, "Error opening users file.\n", 26, 0);
-            return;
-        }
-
-        char userlines[1000][1024];
-        int usercount = 0;
-        bool user_found = false;
-        while (fgets(userlines[usercount], sizeof(userlines[usercount]), ufp) && usercount < 1000) {
-            char role[32], uname[64], upass[64];
-            if (sscanf(userlines[usercount], "%31[^|]|%63[^|]|%63[^\n]", role, uname, upass) == 3) {
-                if (strcmp(uname, username) == 0) {
-                    char safe_password[200];
-                    strncpy(safe_password, buffer, sizeof(safe_password) - 1);
-                    safe_password[sizeof(safe_password) - 1] = '\0';
-                    snprintf(userlines[usercount], sizeof(userlines[usercount]), "customer|%s|%s\n", username, safe_password);
-                    user_found = true;
+        char line[256], role[32], user[64], pass[64];
+        long pos = 0;
+        while (fgets(line, sizeof(line), fp)) {
+            if (sscanf(line, "%31[^|]|%63[^|]|%63[^\n]", role, user, pass) == 3) {
+                trim(user);
+                if (strcmp(user, username) == 0) {
+                    fseek(fp, pos, SEEK_SET);
+                    fprintf(fp, "%s|%s|%s\n", role, user, new_password);
+                    fflush(fp);
+                    password_updated = true;
+                    break;
                 }
             }
-            usercount++;
-        }
-        fclose(ufp);
-
-        if (!user_found) {
-            send(new_socket, "User not found in users file.\n", 30, 0);
-            return;
+            pos = ftell(fp);
         }
 
-        // Write back updated users file
-        ufp = fopen(USERS_FILE, "w");
-        if (!ufp) {
-            send(new_socket, "Failed to open users file for writing.\n", 39, 0);
-            return;
-        }
-        for (int i = 0; i < usercount; ++i) {
-            fputs(userlines[i], ufp);
-        }
-        fclose(ufp);
+        unlock_file(fd);
+        fclose(fp);
+
+        if (!password_updated) return -1;  // User not found for password update
     }
 
-    // 5. Rewrite the entire customer_data.txt with updated mobile
-    fp = fopen(CUSTOMER_DATA_FILE, "w");
-    if (!fp) {
-        send(new_socket, "Error opening customer data file for writing.\n", 45, 0);
-        return;
+    // Update mobile number in customer_data.txt if new_mobile is not empty
+    if (new_mobile && strlen(new_mobile) > 0) {
+        FILE *fp = fopen("customer_data.txt", "r+");
+        if (!fp) return -1;
+
+        int fd = fileno(fp);
+        if (lock_file(fd, F_WRLCK) < 0) {
+            fclose(fp);
+            return -1;
+        }
+
+        char line[256], file_user[64], account_num[32], mobile[32], status[32];
+        float balance;
+        long pos = 0;
+        bool found = false;
+
+        while (fgets(line, sizeof(line), fp)) {
+            if (sscanf(line, "%63[^|]|%31[^|]|%31[^|]|%f|%31s",
+                       file_user, account_num, mobile, &balance, status) == 5) {
+                trim(file_user);
+                if (strcmp(file_user, username) == 0) {
+                    found = true;
+                    fseek(fp, pos, SEEK_SET);
+                    // Write new line with updated mobile but keep rest same
+                    fprintf(fp, "%s|%s|%s|%.2f|%s\n", file_user, account_num, new_mobile, balance, status);
+                    fflush(fp);
+                    break;
+                }
+            }
+            pos = ftell(fp);
+        }
+
+        unlock_file(fd);
+        fclose(fp);
+
+        if (!found) return -1;  // User not found for mobile update
+        mobile_updated = true;
     }
-    for (size_t i = 0; i < count; ++i) {
-        fprintf(fp, "%s|%s|%s|%.2f|%s\n",
-                customers[i].username,
-                customers[i].account_number,
-                customers[i].mobile,
-                customers[i].balance,
-                customers[i].loan_status);
+
+    // Success if either password or mobile updated or no updates requested (treated success)
+    if ((new_password && strlen(new_password) > 0 && !password_updated) ||
+        (new_mobile && strlen(new_mobile) > 0 && !mobile_updated))
+        return -1;
+
+    return 0;  // Success
+}
+
+
+int reject_loan_by_id(const char *loan_id_to_reject, const char *employeeid) {
+    FILE *fp = fopen("loans.txt", "r+");
+    if (!fp) return 1;  // Treat file open failure as "loan not found" since no loans accessible
+
+    int fd = fileno(fp);
+    if (lock_file(fd, F_WRLCK) < 0) {
+        fclose(fp);
+        return 1;  // Lock failure -> treat as not found/failure
     }
+
+    char line[256];
+    long pos;
+    int found = 0;
+    int res = 1; // default not found
+
+    while ((pos = ftell(fp)), fgets(line, sizeof(line), fp) != NULL) {
+        char loan_id[32], account_num[32], status[32], emp_id[32];
+        double amount;
+
+        if (sscanf(line, "%31[^|]|%31[^|]|%lf|%31[^|]|%31s",
+                   loan_id, account_num, &amount, status, emp_id) == 5) {
+            if (strcmp(loan_id, loan_id_to_reject) == 0) {
+                found = 1;
+                if (strcmp(emp_id, employeeid) != 0) {
+                    res = 2;  // Loan not assigned to this employee
+                } else {
+                    // Update status to Rejected
+                    fseek(fp, pos, SEEK_SET);
+                    fprintf(fp, "%s|%s|%.2lf|Rejected|%s\n", loan_id, account_num, amount, emp_id);
+                    fflush(fp);
+                    res = 0;  // Success
+                }
+                break;
+            }
+        }
+    }
+
+    unlock_file(fd);
     fclose(fp);
 
-    send(new_socket, "Customer details updated successfully.\n", 39, 0);
+    if (!found) res = 1;
+    return res;
 }
+
+int approve_loan_by_id(const char *loan_id_to_approve, const char *employeeid)
+{
+    FILE *fp_loans = fopen("loans.txt", "r+");
+    if (!fp_loans)
+        return 1;
+
+    int fd_loans = fileno(fp_loans);
+    if (lock_file(fd_loans, F_WRLCK) < 0)
+    {
+        fclose(fp_loans);
+        return 1;
+    }
+
+    char line[256];
+    long pos;
+    int found = 0;
+    double loan_amount = 0.0;
+    char account_num[32];
+    char emp_id[32];
+    char status[32];
+
+    while ((pos = ftell(fp_loans)), fgets(line, sizeof(line), fp_loans) != NULL)
+    {
+        char loan_id[32];
+        double amount;
+        if (sscanf(line, "%31[^|]|%31[^|]|%lf|%31[^|]|%31s", loan_id, account_num, &amount, status, emp_id) == 5)
+        {
+            trim(loan_id);
+            trim(emp_id);
+            if (strcmp(loan_id, loan_id_to_approve) == 0)
+            {
+                found = 1;
+                if (strcmp(emp_id, employeeid) != 0)
+                {
+                    unlock_file(fd_loans);
+                    fclose(fp_loans);
+                    return 2;
+                }
+                loan_amount = amount;
+                // Update status to Approved
+                fseek(fp_loans, pos, SEEK_SET);
+                fprintf(fp_loans, "%s|%s|%.2lf|Approved|%s\n", loan_id, account_num, amount, emp_id);
+                fflush(fp_loans);
+                break;
+            }
+        }
+    }
+    unlock_file(fd_loans);
+    fclose(fp_loans);
+
+    if (!found)
+        return 1;
+
+    // Now update customer balance
+    FILE *fp_cust = fopen("customer_data.txt", "r+");
+    if (!fp_cust)
+        return 1;
+
+    int fd_cust = fileno(fp_cust);
+    if (lock_file(fd_cust, F_WRLCK) < 0)
+    {
+        fclose(fp_cust);
+        return 1;
+    }
+
+    found = 0;
+    while ((pos = ftell(fp_cust)), fgets(line, sizeof(line), fp_cust) != NULL)
+    {
+        char username[64], acc_num[32], mob[32], status_cust[32];
+        double balance;
+        if (sscanf(line, "%63[^|]|%31[^|]|%31[^|]|%lf|%31s", username, acc_num, mob, &balance, status_cust) == 5)
+        {
+            trim(acc_num);
+            if (strcmp(acc_num, account_num) == 0)
+            {
+                found = 1;
+                balance += loan_amount;
+                // Update customer's balance line
+                fseek(fp_cust, pos, SEEK_SET);
+                fprintf(fp_cust, "%s|%s|%s|%.2lf|%s\n", username, acc_num, mob, balance, status_cust);
+                fflush(fp_cust);
+                break;
+            }
+        }
+    }
+
+    unlock_file(fd_cust);
+    fclose(fp_cust);
+
+    if (!found)
+        return 1;
+
+    return 0;
+}
+
+bool employee_change_password(const char *username, const char *new_password) {
+    FILE *fp = fopen("users.txt", "r+");  // Use appropriate user file
+    if (!fp) return false;
+
+    int fd = fileno(fp);
+    if (lock_file(fd, F_WRLCK) < 0) {
+        fclose(fp);
+        return false;
+    }
+
+    char line[256];
+    long pos = 0;
+    bool updated = false;
+
+    while (fgets(line, sizeof(line), fp)) {
+        char role[32], user[64], pass[64];
+        if (sscanf(line, "%31[^|]|%63[^|]|%63[^\n]", role, user, pass) == 3) {
+            trimm(user);
+            if (strcmp(user, username) == 0) {
+                fseek(fp, pos, SEEK_SET);
+                fprintf(fp, "%s|%s|%s\n", role, user, new_password);
+                fflush(fp);
+                updated = true;
+                break;
+            }
+        }
+        pos = ftell(fp);
+    }
+
+    unlock_file(fd);
+    fclose(fp);
+    return updated;
+}
+
 
 void process_loan_applications1(int new_socket, const char *employee_id) {
     // Disable Nagle's algorithm for immediate send

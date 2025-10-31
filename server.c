@@ -6,9 +6,11 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <time.h>
-
+#include <fcntl.h>
+#include "filelock.h"
 #include "customer.h"
 #include "employee.h"
+#include "manager.h"
 #include "admin.h"
 
 #define PORT 8080
@@ -354,9 +356,9 @@ void handle_client(int new_socket)
                         "Employee Menu:\n"
                         "1. Add New Customer\n"
                         "2. Modify Customer Details\n"
-                        "3. Approve Loan\n"
+                        "3. View Loan Applications\n"
                         "4. Reject Loan\n"
-                        "5. View Assigned Loan Applications\n"
+                        "5. Approve Loan\n"
                         "6. View Customer Transactions\n"
                         "7. Change Password\n"
                         "8. Logout\n"
@@ -404,25 +406,31 @@ void handle_client(int new_socket)
                         {
                         case 1:
                         {
-                            char add_new_username[64], add_new_password[64], add_new_mobile[16], account_number[16];
+                            char add_new_username[64], add_new_password[64], add_new_mobile[16], account_number[32];
                             FILE *fp;
                             long max_account_num = 1000000;
 
-                            send(new_socket, "Enter new customer username:\n", 29, 0);
+                            // Prompt username
+                            const char *prompt_username = "Enter new customer username:\n";
+                            send(new_socket, prompt_username, strlen(prompt_username), 0);
                             valread = read(new_socket, add_new_username, sizeof(add_new_username) - 1);
                             if (valread <= 0)
                                 break;
                             add_new_username[valread] = '\0';
                             trim(add_new_username);
 
-                            send(new_socket, "Enter password:\n", 16, 0);
+                            // Prompt password
+                            const char *prompt_password = "Enter password:\n";
+                            send(new_socket, prompt_password, strlen(prompt_password), 0);
                             valread = read(new_socket, add_new_password, sizeof(add_new_password) - 1);
                             if (valread <= 0)
                                 break;
                             add_new_password[valread] = '\0';
                             trim(add_new_password);
 
-                            send(new_socket, "Enter mobile number:\n", 21, 0);
+                            // Prompt mobile
+                            const char *prompt_mobile = "Enter mobile number:\n";
+                            send(new_socket, prompt_mobile, strlen(prompt_mobile), 0);
                             valread = read(new_socket, add_new_mobile, sizeof(add_new_mobile) - 1);
                             if (valread <= 0)
                                 break;
@@ -436,10 +444,11 @@ void handle_client(int new_socket)
                                 char line[256];
                                 while (fgets(line, sizeof(line), fp))
                                 {
-                                    char username[64], mobile[16], loan_status[32];
+                                    char username[64], mobile[16], status[32];
                                     float balance;
                                     long acct_num;
-                                    if (sscanf(line, "%[^|]|%ld|%[^|]|%f|%s", username, &acct_num, mobile, &balance, loan_status) == 5)
+                                    if (sscanf(line, "%63[^|]|%ld|%15[^|]|%f|%31s",
+                                               username, &acct_num, mobile, &balance, status) == 5)
                                     {
                                         if (acct_num >= max_account_num)
                                             max_account_num = acct_num + 1;
@@ -449,7 +458,7 @@ void handle_client(int new_socket)
                             }
                             snprintf(account_number, sizeof(account_number), "%ld", max_account_num);
 
-                            // Call add_new_customer with full details
+                            // Call the new add_new_customer function
                             int result = add_new_customer(add_new_username, add_new_password, account_number, add_new_mobile);
 
                             if (result == 0)
@@ -463,25 +472,340 @@ void handle_client(int new_socket)
                             break;
                         }
                         case 2:
-                            modify_customer_details(new_socket);
-                            break;
-                        case 3:
                         {
-                            process_loan_applications1(new_socket, employee_id);
+                            char username[64], new_password[64], new_mobile[32];
+                            char response[256];
+                            int valread;
+
+                            // Prompt for user type
+                            // const char *prompt_user_type = "Modify which user type? (Type customer): \n";
+                            // send(new_socket, prompt_user_type, strlen(prompt_user_type), 0);
+                            // valread = recv(new_socket, user_type, sizeof(user_type) - 1, 0);
+                            // if (valread <= 0)
+                            //     break;
+                            // user_type[valread] = '\0';
+                            // trim(user_type);
+                            char user_type[16] = "customer";
+                            // Prompt for username
+                            const char *prompt_username = "Enter username: ";
+                            send(new_socket, prompt_username, strlen(prompt_username), 0);
+                            valread = recv(new_socket, username, sizeof(username) - 1, 0);
+                            if (valread <= 0)
+                                break;
+                            username[valread] = '\0';
+                            trim(username);
+
+                            // Prompt for new password or NO
+                            const char *prompt_password = "Enter new password or write 'NO' to keep unchanged: ";
+                            send(new_socket, prompt_password, strlen(prompt_password), 0);
+                            valread = recv(new_socket, new_password, sizeof(new_password) - 1, 0);
+                            if (valread <= 0)
+                                break;
+                            new_password[valread] = '\0';
+                            trim(new_password);
+                            if (strcasecmp(new_password, "NO") == 0)
+                                new_password[0] = '\0';
+
+                            // Prompt for new mobile or NO
+                            const char *prompt_mobile = "Enter new mobile number or write 'NO' to keep unchanged: ";
+                            send(new_socket, prompt_mobile, strlen(prompt_mobile), 0);
+                            valread = recv(new_socket, new_mobile, sizeof(new_mobile) - 1, 0);
+                            if (valread <= 0)
+                                break;
+                            new_mobile[valread] = '\0';
+                            trim(new_mobile);
+                            if (strcasecmp(new_mobile, "NO") == 0)
+                                new_mobile[0] = '\0';
+
+                            // Call modification function
+                            int mod_result = modify_user_details(user_type, username, new_password, new_mobile);
+
+                            if (mod_result == 0)
+                                strcpy(response, "User details updated successfully.\n");
+                            else
+                                strcpy(response, "Failed to update user details.\n");
+
+                            send(new_socket, response, strlen(response), 0);
+                            write_server_log(client_ip, "Modify User Details", response);
+                            send(new_socket, emp_menu, strlen(emp_menu), 0);
                             break;
                         }
-                        case 4:
-                            process_loan_applications2(new_socket, employee_id);
+                        case 3: // View Assigned Loan Applications
+                        {
+                            // FILE *fp = fopen(EMPLOYEE_FILE, "r");
+                            // if (!fp)
+                            // {
+                            //     const char *msg = "Error opening employee data file.\n";
+                            //     send(new_socket, msg, strlen(msg), 0);
+                            //     break;
+                            // }
+
+                            // char line[256], uname[64], id[16], mobile[16];
+                            // while (fgets(line, sizeof(line), fp))
+                            // {
+                            //     if (sscanf(line, "%15s %63s %15s", id, uname, mobile) == 3)
+                            //     {
+                            //         if (strcmp(uname, logged_in_username) == 0)
+                            //         {
+                            //             strcpy(employeeid, id);
+                            //             break;
+                            //         }
+                            //     }
+                            // }
+                            // fclose(fp);
+                            printf("Debug: employeeid = '%s'\n", employee_id);
+                            if (employee_id[0] == '\0')
+                            {
+                                const char *msg = "Employee ID not found for user.\n";
+                                send(new_socket, msg, strlen(msg), 0);
+                                break;
+                            }
+
+                            fp = fopen("loans.txt", "r");
+                            if (!fp)
+                            {
+                                const char *msg = "Failed to open loans file.\n";
+                                send(new_socket, msg, strlen(msg), 0);
+                                break;
+                            }
+
+                            int fd = fileno(fp);
+                            if (lock_file(fd, F_RDLCK) < 0)
+                            {
+                                fclose(fp);
+                                const char *msg = "Failed to lock loans file.\n";
+                                send(new_socket, msg, strlen(msg), 0);
+                                break;
+                            }
+
+                            char loan_id[32], account_num[32], status[32], loan_emp_id[32];
+                            double amount;
+                            char response[4096] = {0}; // Clear buffer for response
+                            size_t response_len = 0;
+
+                            response_len += snprintf(response + response_len, sizeof(response) - response_len,
+                                                     "LoanID | AccountNumber | Amount | Status | Assigned Employee\n");
+                            response_len += snprintf(response + response_len, sizeof(response) - response_len,
+                                                     "---------------------------------------------------------------\n");
+
+                            while (fgets(line, sizeof(line), fp))
+                            {
+                                if (sscanf(line, "%31[^|]|%31[^|]|%lf|%31[^|]|%31s",
+                                           loan_id, account_num, &amount, status, loan_emp_id) == 5)
+                                {
+                                    if (strcmp(loan_emp_id, employee_id) == 0)
+                                    {
+                                        response_len += snprintf(response + response_len, sizeof(response) - response_len,
+                                                                 "%s | %s | %.2lf | %s | %s\n",
+                                                                 loan_id, account_num, amount, status, loan_emp_id);
+                                        if (response_len >= sizeof(response) - 100)
+                                            break;
+                                    }
+                                }
+                            }
+
+                            unlock_file(fd);
+                            fclose(fp);
+
+                            if (response_len == 0)
+                            {
+                                const char *msg = "No loan applications assigned to you currently.\n";
+                                send(new_socket, msg, strlen(msg), 0);
+                            }
+                            else
+                            {
+                                send(new_socket, response, response_len, 0);
+                            }
+
+                            // send(new_socket, emp_menu, strlen(emp_menu), 0);
                             break;
+                        }
+
+                        case 4: // Reject Loan
+                        {
+                            char employeeid[16] = {0};
+                            char loan_id_to_reject[32];
+                            int res;
+
+                            // Open and find employee ID using logged_in_username
+                            FILE *fp_emp = fopen(EMPLOYEE_FILE, "r");
+                            if (!fp_emp)
+                            {
+                                const char *msg = "Error opening employee data file.\n";
+                                send(new_socket, msg, strlen(msg), 0);
+                                break;
+                            }
+
+                            char line[256], uname[64], id[16], mobile[16];
+                            while (fgets(line, sizeof(line), fp_emp))
+                            {
+                                if (sscanf(line, "%15[^|]|%63[^|]|%15[^\n]", id, uname, mobile) == 3)
+                                {
+                                    trim(uname);
+                                    if (strcmp(uname, logged_in_username) == 0)
+                                    {
+                                        strcpy(employeeid, id);
+                                        break;
+                                    }
+                                }
+                            }
+                            fclose(fp_emp);
+
+                            if (employeeid[0] == '\0')
+                            {
+                                const char *msg = "Employee ID not found for user.\n";
+                                send(new_socket, msg, strlen(msg), 0);
+                                break;
+                            }
+
+                            // Prompt client to enter loan ID to reject
+                            const char *prompt = "Enter loan ID to reject:\n";
+                            send(new_socket, prompt, strlen(prompt), 0);
+
+                            // Receive loan ID from client
+                            int valread = recv(new_socket, loan_id_to_reject, sizeof(loan_id_to_reject) - 1, 0);
+                            if (valread <= 0)
+                                break;
+                            loan_id_to_reject[valread] = '\0';
+                            trim(loan_id_to_reject);
+
+                            // Call reject function
+                            res = reject_loan_by_id(loan_id_to_reject, employeeid);
+
+                            // Send response based on reject function result
+                            if (res == 0)
+                            {
+                                const char *msg = "Loan rejected successfully.\n";
+                                send(new_socket, msg, strlen(msg), 0);
+                            }
+                            else if (res == 1)
+                            {
+                                const char *msg = "Loan ID not found.\n";
+                                send(new_socket, msg, strlen(msg), 0);
+                            }
+                            else if (res == 2)
+                            {
+                                const char *msg = "Loan not assigned to you.\n";
+                                send(new_socket, msg, strlen(msg), 0);
+                            }
+
+                            // Send employee menu prompt to client for continued interaction
+
+                            break;
+                        }
                         case 5:
-                            // reject_loan(new_socket, employee_id);
+                        {
+                            char buffer[1024];
+                            char loan_id_to_approve[256];
+                            int valread, res;
+                            char employeeid[16] = {0};
+
+                            // Retrieve or have employeeid from logged-in session/context
+                            // Example: assume a function to get employee ID by username
+                            FILE *fp = fopen(EMPLOYEE_FILE, "r");
+                            if (!fp)
+                            {
+                                const char *msg = "Error opening employee data file.\n";
+                                send(new_socket, msg, strlen(msg), 0);
+                                break;
+                            }
+                            char line[256], uname[64], id[16], mobile[16];
+                            while (fgets(line, sizeof(line), fp))
+                            {
+                                if (sscanf(line, "%15[^|]|%63[^|]|%15[^\n]", id, uname, mobile) == 3)
+                                {
+                                    trim(uname);
+                                    if (strcmp(uname, logged_in_username) == 0)
+                                    {
+                                        strcpy(employeeid, id);
+                                        break;
+                                    }
+                                }
+                            }
+                            fclose(fp);
+                            if (employeeid[0] == '\0')
+                            {
+                                const char *msg = "Employee ID not found for user.\n";
+                                send(new_socket, msg, strlen(msg), 0);
+                                break;
+                            }
+
+                            // Receive loan ID from client (no prompt sent by server)
+                            valread = recv(new_socket, loan_id_to_approve, sizeof(loan_id_to_approve) - 1, 0);
+                            if (valread <= 0)
+                                break;
+                            loan_id_to_approve[valread] = '\0';
+                            trim(loan_id_to_approve);
+
+                            // Call the approve loan function
+                            res = approve_loan_by_id(loan_id_to_approve, employeeid);
+
+                            // Set response message based on function result
+                            if (res == 0)
+                            {
+                                strcpy(buffer, "Loan approved successfully.\n");
+                            }
+                            else if (res == 1)
+                            {
+                                strcpy(buffer, "Loan ID not found.\n");
+                            }
+                            else if (res == 2)
+                            {
+                                strcpy(buffer, "Loan not assigned to you.\n");
+                            }
+                            else
+                            {
+                                strcpy(buffer, "Unknown error.\n");
+                            }
+
+                            // Send response message
+                            send(new_socket, buffer, strlen(buffer), 0);
+
+                            // Send employee menu prompt again
+                            send(new_socket, emp_menu, strlen(emp_menu), 0);
+
                             break;
+                        }
                         case 6:
                             // view_assigned_loan_applications(new_socket);
                             break;
-                        case 7:
-                            // view_customer_transactions(new_socket);
+                        case 7: // Change Password
+                        {
+                            char buffer[1024];
+                            char new_password[256];
+                            int valread;
+
+                            // Prompt client to enter a new password or just wait for input (no prompt sent)
+                            // Client should print prompt locally
+
+                            // Receive new password from client
+                            valread = recv(new_socket, new_password, sizeof(new_password) - 1, 0);
+                            if (valread <= 0)
+                                break;
+                            new_password[valread] = '\0';
+                            trim(new_password);
+
+                            // Call your employee password change function
+                            bool success = employee_change_password(logged_in_username, new_password);
+
+                            if (success)
+                            {
+                                strcpy(buffer, "Password changed successfully.\n");
+                            }
+                            else
+                            {
+                                strcpy(buffer, "Failed to change password.\n");
+                            }
+
+                            // Send operation result to client
+                            send(new_socket, buffer, strlen(buffer), 0);
+
+                            // Send employee menu prompt again for further actions
+                            send(new_socket, emp_menu, strlen(emp_menu), 0);
+
                             break;
+                        }
+
                         case 8:
                             // change_password(new_socket);
                             break;
@@ -532,6 +856,252 @@ void handle_client(int new_socket)
                         strcpy(response, "Login successful.\n");
                     else
                         strcpy(response, "Login failed.\n");
+                    send(new_socket, response, strlen(response), 0);
+                    write_server_log(client_ip, buffer, response);
+                }
+            }
+            else if (strcmp(role, "manager") == 0)
+            {
+                // Validate manager login
+                if (validate_manager_login(username, password))
+                {
+                    strcpy(logged_in_username, username);
+                    strcpy(response, "Login successful.");
+                    send(new_socket, response, strlen(response), 0);
+                    write_server_log(client_ip, buffer, response);
+
+                    // Manager menu string
+                    const char *manager_menu =
+                        "Manager Menu:\n"
+                        "1. Activate/Deactivate Customer Accounts\n"
+                        "2. Assign Loan Application Processes to Employees\n"
+                        "3. Review Customer Feedback\n"
+                        "4. Change Password\n"
+                        "5. Logout\n"
+                        "Enter choice: ";
+
+                    while (1)
+                    {
+                        send(new_socket, manager_menu, strlen(manager_menu), 0);
+
+                        int valread = recv(new_socket, buffer, sizeof(buffer) - 1, 0);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+                        int choice = atoi(buffer);
+
+                        switch (choice)
+                        {
+                        case 1:
+                        {
+                            char input[64];
+                            char status_choice[16];
+                            char response[256];
+
+                            // printf("[DEBUG] Received choice 1: Activate/Deactivate Customer Account\n");
+
+                            // Prompt for account number
+                            const char *prompt1 = "Enter customer account number to activate/deactivate: ";
+                            send(new_socket, prompt1, strlen(prompt1), 0);
+                            // printf("[DEBUG] Sent prompt1\n");
+
+                            int valread = recv(new_socket, input, sizeof(input) - 1, 0);
+                            if (valread <= 0)
+                            {
+                                // printf("[DEBUG] Failed to read account number input\n");
+                                break;
+                            }
+                            input[valread] = '\0';
+                            trim(input);
+                            // printf("[DEBUG] Received account number: %s\n", input);
+
+                            // Prompt for status
+                            const char *prompt2 = "Enter status (Active/Deactive): ";
+                            send(new_socket, prompt2, strlen(prompt2), 0);
+                            // printf("[DEBUG] Sent prompt2\n");
+
+                            valread = recv(new_socket, status_choice, sizeof(status_choice) - 1, 0);
+                            if (valread <= 0)
+                            {
+                                // printf("[DEBUG] Failed to read status input\n");
+                                break;
+                            }
+                            status_choice[valread] = '\0';
+                            trim(status_choice);
+                            // printf("[DEBUG] Received status choice: %s\n", status_choice);
+
+                            // Validate input and update account
+                            if (strcasecmp(status_choice, "Active") != 0 && strcasecmp(status_choice, "Deactive") != 0)
+                            {
+                                strcpy(response, "Invalid status. Please enter 'Active' or 'Deactive'.\n");
+                                send(new_socket, response, strlen(response), 0);
+                                // printf("[DEBUG] Invalid status sent\n");
+                                break;
+                            }
+
+                            bool success = manager_set_customer_account_status(input, status_choice);
+                            if (success)
+                            {
+                                strcpy(response, "Customer account status updated successfully.\n");
+                            }
+                            else
+                            {
+                                strcpy(response, "Failed to update customer account status.\n");
+                            }
+                            send(new_socket, response, strlen(response), 0);
+                            // printf("[DEBUG] Sent response: %s\n", response);
+
+                            write_server_log(client_ip, "Activate/Deactivate Customer", response);
+
+                            break;
+                        }
+                        case 2:
+                        {
+                            char buffer[128];
+                            char loanID[32], employeeID[32];
+                            int valread;
+
+                            // Prompt for Loan ID
+                            const char *loan_prompt = "Enter Loan ID: ";
+                            send(new_socket, loan_prompt, strlen(loan_prompt), 0);
+                            valread = recv(new_socket, loanID, sizeof(loanID) - 1, 0);
+                            if (valread <= 0)
+                                break;
+                            loanID[valread] = '\0';
+                            trim(loanID);
+
+                            // Prompt for Employee ID
+                            const char *emp_prompt = "Enter Employee ID: ";
+                            send(new_socket, emp_prompt, strlen(emp_prompt), 0);
+                            valread = recv(new_socket, employeeID, sizeof(employeeID) - 1, 0);
+                            if (valread <= 0)
+                                break;
+                            employeeID[valread] = '\0';
+                            trim(employeeID);
+
+                            // Call your assignment function - returns int status code
+                            // 0 = success, 1 = invalid loanID, 2 = invalid employeeID
+                            int result = assign_loan_to_employee(loanID, employeeID);
+
+                            if (result == 0)
+                            {
+                                send(new_socket, "0", 1, 0); // success
+                            }
+                            else if (result == 1)
+                            {
+                                send(new_socket, "1", 1, 0); // invalid loanID
+                            }
+                            else if (result == 2)
+                            {
+                                send(new_socket, "2", 1, 0); // invalid employeeID
+                            }
+                            else
+                            {
+                                send(new_socket, "3", 1, 0); // some other error
+                            }
+
+                            break;
+                        }
+                        case 3: // Review Customer Feedback
+                        {
+                            int fd = open("feedback.txt", O_RDONLY);
+                            if (fd < 0)
+                            {
+                                const char *msg = "Failed to open feedback file.\n";
+                                send(new_socket, msg, strlen(msg), 0);
+                                break;
+                            }
+
+                            if (lock_file(fd, F_RDLCK) < 0)
+                            {
+                                close(fd);
+                                const char *msg = "Failed to lock feedback file.\n";
+                                send(new_socket, msg, strlen(msg), 0);
+                                break;
+                            }
+
+                            char buffer[4096];
+                            ssize_t bytes_read;
+                            int total_sent = 0;
+
+                            // Read and send feedback file in chunks
+                            while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0)
+                            {
+                                ssize_t sent = send(new_socket, buffer, bytes_read, 0);
+                                if (sent <= 0)
+                                {
+                                    break;
+                                }
+                                total_sent += sent;
+                            }
+                            const char *end_marker = "\n__FEEDBACK_END__\n";
+                            send(new_socket, end_marker, strlen(end_marker), 0);
+
+                            unlock_file(fd);
+                            close(fd);
+
+                            if (bytes_read < 0)
+                            {
+                                const char *msg = "Error reading feedback file.\n";
+                                send(new_socket, msg, strlen(msg), 0);
+                            }
+
+                            // Optionally: send a special terminator or prompt if your client expects it
+
+                            break;
+                        }
+                        case 4: // Manager Change Password
+                        {
+                            char username[64];
+                            char new_password[64];
+                            char response[256];
+
+                            // Send prompt for username
+                            const char *prompt1 = "Enter username to change password: ";
+                            send(new_socket, prompt1, strlen(prompt1), 0);
+                            int valread = recv(new_socket, username, sizeof(username) - 1, 0);
+                            if (valread <= 0)
+                                break;
+                            username[valread] = '\0';
+                            trim(username);
+
+                            // Send prompt for new password
+                            const char *prompt2 = "Enter new password: ";
+                            send(new_socket, prompt2, strlen(prompt2), 0);
+                            valread = recv(new_socket, new_password, sizeof(new_password) - 1, 0);
+                            if (valread <= 0)
+                                break;
+                            new_password[valread] = '\0';
+                            trim(new_password);
+
+                            bool res = change_password(username, new_password);
+
+                            if (res)
+                                strcpy(response, "Password changed successfully.\n");
+                            else
+                                strcpy(response, "Failed to change password. User may not exist.\n");
+
+                            send(new_socket, response, strlen(response), 0);
+                            write_server_log(client_ip, "Manager Change Password", response);
+
+                            break;
+                        }
+
+                        case 5:
+                            // Logout manager
+                            strcpy(response, "Logging out...\n");
+                            send(new_socket, response, strlen(response), 0);
+                            write_server_log(client_ip, "Logout", response);
+                            return; // End manager session
+                        default:
+                            send(new_socket, "Invalid choice, try again.\n", 26, 0);
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    strcpy(response, "Login failed.\n");
                     send(new_socket, response, strlen(response), 0);
                     write_server_log(client_ip, buffer, response);
                 }

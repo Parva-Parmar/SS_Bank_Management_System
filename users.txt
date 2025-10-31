@@ -3,9 +3,12 @@ employee|Keyur|keypad1234
 customer|Parva|parmar123
 customer|Aditya|aditya123 
 customer|Dholu|dholu123
-customer|cust1|cust1_1111
+customer|cust1|cust1_1234
 customer|cust2|cust2_4321
 customer|cust3|cust3_1234
 customer|cust4|cust4_1111
 employee|Emp1|emp1_3333
-manager|Man1|man1_1234
+manager|Man1|man1_1000
+customer|cust5|cust5_5555
+customer|cust6|cust6_6666
+customer|cust7|cust7_2112

@@ -306,234 +306,570 @@ int main()
             }
             else if (strstr(buffer, "Login successful.") && role_choice == 3)
             {
-                char buffer[1024];
-                char input[256];
-                int valread;
-
                 while (1)
                 {
-                    // Receive and print menu or prompt message from server
-                    read_full_prompt(sock, buffer, sizeof(buffer), "Enter choice:");
-                    printf("%s", buffer);
-                    // Read user input (menu choice)
-                    if (fgets(input, sizeof(input), stdin) == NULL)
+                    valread = read(sock, buffer, 1024);
+                    if (valread <= 0)
                         break;
-                    input[strcspn(input, "\n")] = 0; // Remove newline
-                    send(sock, input, strlen(input), 0);
+                    buffer[valread] = '\0';
+                    printf("%s", buffer);
 
-                    int choice = atoi(input);
+                    int emp_choice = -1;
+                    char input[32];
 
-                    if (choice == 1)
+                    // Robust input loop for menu choice
+                    while (emp_choice < 1 || emp_choice > 9)
+                    {
+                        printf("Enter choice: ");
+                        if (!fgets(input, sizeof(input), stdin))
+                        {
+                            printf("Input error. Exiting menu.\n");
+                            break;
+                        }
+                        if (input[0] == '\n')
+                            continue; // ignore empty input
+                        input[strcspn(input, "\n")] = 0;
+                        emp_choice = atoi(input);
+
+                        if (emp_choice < 1 || emp_choice > 9)
+                            printf("Invalid choice, please enter a number between 1 and 9.\n");
+                    }
+                    if (emp_choice < 1 || emp_choice > 9)
+                        break; // exit outer while if input loop broke
+
+                    char cmd[32];
+                    sprintf(cmd, "%d", emp_choice);
+                    send(sock, cmd, strlen(cmd), 0);
+
+                    switch (emp_choice)
+                    {
+                    case 1:
                     {
                         char buffer[1024];
                         char input[256];
                         int valread;
 
-                        // Receive prompt for username
-                        valread = read(sock, buffer, sizeof(buffer) - 1);
+                        // Receive and print prompt for username
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
                         if (valread <= 0)
                             break;
                         buffer[valread] = '\0';
                         printf("%s", buffer);
+                        fflush(stdout);
 
-                        // Read username from user input
+                        // Read username from user and send to server
                         if (!fgets(input, sizeof(input), stdin))
                             break;
                         input[strcspn(input, "\n")] = 0; // Remove newline
                         send(sock, input, strlen(input), 0);
 
-                        // Receive prompt for password
-                        valread = read(sock, buffer, sizeof(buffer) - 1);
+                        // Receive and print prompt for password
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
                         if (valread <= 0)
                             break;
                         buffer[valread] = '\0';
                         printf("%s", buffer);
+                        fflush(stdout);
 
-                        // Read password from user input
+                        // Read password from user and send to server
                         if (!fgets(input, sizeof(input), stdin))
                             break;
                         input[strcspn(input, "\n")] = 0;
                         send(sock, input, strlen(input), 0);
 
-                        // Add new - Receive prompt for mobile number
-                        valread = read(sock, buffer, sizeof(buffer) - 1);
+                        // Receive and print prompt for mobile number
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
                         if (valread <= 0)
                             break;
                         buffer[valread] = '\0';
                         printf("%s", buffer);
+                        fflush(stdout);
 
-                        // Read mobile number from user input
+                        // Read mobile number from user and send to server
                         if (!fgets(input, sizeof(input), stdin))
                             break;
                         input[strcspn(input, "\n")] = 0;
                         send(sock, input, strlen(input), 0);
 
-                        // Receive operation result message from server
-                        valread = read(sock, buffer, sizeof(buffer) - 1);
+                        // Receive and print operation result message
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
                         if (valread <= 0)
                             break;
                         buffer[valread] = '\0';
                         printf("%s", buffer);
+                        fflush(stdout);
+
+                        // Receive and print employee menu prompt again
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+                        fflush(stdout);
+
+                        break;
+                    }
+
+                    case 2:
+                    {
+                        char buffer[1024];
+                        char input[256];
+                        int valread;
+
+                        // Prompt for username
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+                        fflush(stdout);
+
+                        if (!fgets(input, sizeof(input), stdin))
+                            break;
+                        input[strcspn(input, "\n")] = 0;
+                        send(sock, input, strlen(input), 0);
+
+                        // Prompt for password / NO
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+                        fflush(stdout);
+
+                        if (!fgets(input, sizeof(input), stdin))
+                            break;
+                        input[strcspn(input, "\n")] = 0;
+                        send(sock, input, strlen(input), 0);
+
+                        // Prompt for mobile / NO
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+                        fflush(stdout);
+
+                        if (!fgets(input, sizeof(input), stdin))
+                            break;
+                        input[strcspn(input, "\n")] = 0;
+                        send(sock, input, strlen(input), 0);
+
+                        // Receive modification result
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+                        fflush(stdout);
+
+                        // Receive menu prompt again for next action
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+                        fflush(stdout);
+
+                        break;
+                    }
+
+                    case 3:
+                    {
+                        char buffer[4096];
+                        int valread;
+
+                        printf("Fetching loans assigned to you...\n");
+
+                        // Receive the full list of assigned loans
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+                        fflush(stdout);
+
+                        printf("These were the loans assigned to you.\n");
 
                         // Receive the employee menu prompt again
-                        valread = read(sock, buffer, sizeof(buffer) - 1);
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
                         if (valread <= 0)
                             break;
                         buffer[valread] = '\0';
                         printf("%s", buffer);
+                        fflush(stdout);
+
+                        break;
                     }
-                    else if (choice == 2)
-                    { // Another operation, e.g., Modify Customer Details
+
+                    case 4:
+                    {
+                        char buffer[1024];
+                        char input[256];
+                        int valread;
+
+                        // Prompt user to enter loan ID to reject
+                        printf("Enter loan ID to reject: ");
+                        if (!fgets(input, sizeof(input), stdin))
+                            break;
+                        input[strcspn(input, "\n")] = 0; // Remove newline character
+
+                        // Send the loan ID to server
+                        send(sock, input, strlen(input), 0);
+
+                        // Receive server response (success or error message)
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+                        fflush(stdout);
+
+                        // Receive and display the employee menu again
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+                        fflush(stdout);
+                        break;
+                    }
+
+                    case 5:
+                    {
+                        char buffer[1024];
+                        char input[256];
+                        int valread;
+
+                        // Print prompt locally only on client
+                        printf("Enter loan ID to approve: ");
+
+                        // Read input from user
+                        if (!fgets(input, sizeof(input), stdin))
+                            break;
+                        input[strcspn(input, "\n")] = 0; // Remove newline
+
+                        // Send loan ID to server
+                        send(sock, input, strlen(input), 0);
+
+                        // Receive and print server response message (success/error)
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+                        fflush(stdout);
+
+                        // Receive and print employee menu prompt
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+                        fflush(stdout);
+
+                        break;
+                    }
+                    case 6:
+                        // Implement view_assigned_loan_applications if needed
+                        break;
+
+                    case 7: // Change Password
+                    {
+                        char buffer[1024];
+                        char input[256];
+                        int valread;
+
+                        // Print prompt locally and read new password from user
+                        printf("Enter new password: ");
+                        if (!fgets(input, sizeof(input), stdin))
+                            break;
+                        input[strcspn(input, "\n")] = 0; // Remove newline
+
+                        // Send new password to server
+                        send(sock, input, strlen(input), 0);
+
+                        // Receive server response (success/failure message)
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+                        fflush(stdout);
+
+                        // Receive employee menu prompt again
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+                        fflush(stdout);
+
+                        break;
+                    }
+                    case 8:
+                    {
+                        // Logout or other functionality
+                        break;
+                    }
+
+                    case 9:
+                    {
+                        printf("Logging out...\n");
+                        break;
+                    }
+
+                    default:
+                    {
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+                        fflush(stdout);
+                        break;
+                    }
+                    }
+                }
+            }
+
+            else if (strstr(buffer, "Login successful.") && role_choice == 2)
+            {
+                while (1)
+                {
+                    valread = read(sock, buffer, 1024);
+                    if (valread <= 0)
+                        break;
+                    buffer[valread] = '\0';
+                    printf("%s", buffer);
+
+                    int manager_choice;
+                    fflush(stdout);
+                    scanf("%d", &manager_choice);
+                    getchar(); // consume newline
+
+                    char cmd[32];
+                    snprintf(cmd, sizeof(cmd), "%d", manager_choice);
+                    send(sock, cmd, strlen(cmd), 0);
+
+                    switch (manager_choice)
+                    {
+                    case 1:
+                        // Activate/Deactivate Customer Accounts
+                        {
+                            char buffer[1024];
+                            char input[128];
+                            int valread;
+
+                            // printf("[CLIENT DEBUG] Starting Activate/Deactivate Customer Account flow\n");
+
+                            // Receive prompt for account number
+                            valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                            if (valread <= 0)
+                            {
+                                // printf("[CLIENT DEBUG] Failed to receive account number prompt\n");
+                                break;
+                            }
+                            buffer[valread] = '\0';
+                            // printf("[CLIENT DEBUG] Received prompt: %s\n", buffer);
+
+                            // Show prompt to user
+                            printf("%s", buffer);
+
+                            // Read user input
+                            if (!fgets(input, sizeof(input), stdin))
+                            {
+                                // printf("[CLIENT DEBUG] Failed to read user input for account number\n");
+                                break;
+                            }
+                            input[strcspn(input, "\n")] = 0;
+                            send(sock, input, strlen(input), 0);
+                            // printf("[CLIENT DEBUG] Sent account number: %s\n", input);
+
+                            // Receive prompt for status (Active/Deactive)
+                            valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                            if (valread <= 0)
+                            {
+                                // printf("[CLIENT DEBUG] Failed to receive status prompt\n");
+                                break;
+                            }
+                            buffer[valread] = '\0';
+                            // printf("[CLIENT DEBUG] Received prompt: %s\n", buffer);
+
+                            // Show prompt to user
+                            printf("%s", buffer);
+
+                            // Read status input
+                            if (!fgets(input, sizeof(input), stdin))
+                            {
+                                // printf("[CLIENT DEBUG] Failed to read user input for status\n");
+                                break;
+                            }
+                            input[strcspn(input, "\n")] = 0;
+                            send(sock, input, strlen(input), 0);
+                            // printf("[CLIENT DEBUG] Sent status choice: %s\n", input);
+
+                            // Receive final response from server
+                            valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                            if (valread <= 0)
+                            {
+                                // printf("[CLIENT DEBUG] Failed to receive final response\n");
+                                break;
+                            }
+                            buffer[valread] = '\0';
+                            // printf("[CLIENT DEBUG] Received final response: %s\n", buffer);
+
+                            // Display final response to user
+                            printf("%s", buffer);
+                        }
+                        break;
+
+                    case 2:
+                    {
                         char buffer[1024];
                         char input[128];
                         int valread;
 
-                        // 1. Receive prompt for account number
-                        valread = read(sock, buffer, sizeof(buffer) - 1);
+                        // Receive prompt for Loan ID from server
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
                         if (valread <= 0)
                             break;
                         buffer[valread] = '\0';
                         printf("%s", buffer);
-
-                        // Send account number input
                         if (!fgets(input, sizeof(input), stdin))
                             break;
                         input[strcspn(input, "\n")] = 0;
                         send(sock, input, strlen(input), 0);
 
-                        // 2. Receive prompt to update mobile?
-                        valread = read(sock, buffer, sizeof(buffer) - 1);
+                        // Receive prompt for Employee ID from server
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
                         if (valread <= 0)
                             break;
                         buffer[valread] = '\0';
                         printf("%s", buffer);
-
-                        // Send yes/no for updating mobile
                         if (!fgets(input, sizeof(input), stdin))
                             break;
                         input[strcspn(input, "\n")] = 0;
                         send(sock, input, strlen(input), 0);
 
-                        if (strcasecmp(input, "yes") == 0 || strcasecmp(input, "y") == 0)
+                        // Receive result code from server
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+
+                        // Interpret result code
+                        if (buffer[0] == '0')
                         {
-                            // Receive prompt for new mobile number
-                            valread = read(sock, buffer, sizeof(buffer) - 1);
+                            printf("Loan assigned successfully.\n");
+                            fflush(stdout);
+                        }
+                        else if (buffer[0] == '1')
+                        {
+                            printf("Invalid Loan ID.\n");
+                            fflush(stdout);
+                        }
+                        else if (buffer[0] == '2')
+                        {
+                            printf("Invalid Employee ID.\n");
+                            fflush(stdout);
+                        }
+                        else if (buffer[0] == '3')
+                        {
+                            printf("Failed to assign loan due to server error.\n");
+                            fflush(stdout);
+                        }
+                        else
+                        {
+                            printf("Unknown server response: %s\n", buffer);
+                        }
+                    }
+                    break;
+                    case 3: // Review Customer Feedback
+                    {
+                        char buffer[1024];
+                        int valread;
+                        const char *end_marker = "__FEEDBACK_END__";
+                        char feedback_accumulator[65536] = "";
+                        printf("Start of Feedback.\n");
+                        while (1)
+                        {
+                            valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
                             if (valread <= 0)
                                 break;
                             buffer[valread] = '\0';
-                            printf("%s", buffer);
-
-                            if (!fgets(input, sizeof(input), stdin))
+                            strncat(feedback_accumulator, buffer, sizeof(feedback_accumulator) - strlen(feedback_accumulator) - 1);
+                            if (strstr(feedback_accumulator, end_marker) != NULL)
+                            {
                                 break;
-                            input[strcspn(input, "\n")] = 0;
-                            send(sock, input, strlen(input), 0);
+                            }
                         }
+                        // Remove end_marker from output before displaying
+                        char *pos = strstr(feedback_accumulator, end_marker);
+                        if (pos)
+                            *pos = '\0';
 
-                        // 3. Receive prompt to update password?
-                        valread = read(sock, buffer, sizeof(buffer) - 1);
-                        if (valread <= 0)
-                            break;
-                        buffer[valread] = '\0';
-                        printf("%s", buffer);
-
-                        // Send yes/no for updating password
-                        if (!fgets(input, sizeof(input), stdin))
-                            break;
-                        input[strcspn(input, "\n")] = 0;
-                        send(sock, input, strlen(input), 0);
-
-                        if (strcasecmp(input, "yes") == 0 || strcasecmp(input, "y") == 0)
-                        {
-                            // Receive prompt for new password
-                            valread = read(sock, buffer, sizeof(buffer) - 1);
-                            if (valread <= 0)
-                                break;
-                            buffer[valread] = '\0';
-                            printf("%s", buffer);
-
-                            if (!fgets(input, sizeof(input), stdin))
-                                break;
-                            input[strcspn(input, "\n")] = 0;
-                            send(sock, input, strlen(input), 0);
-                        }
-
-                        // 4. Receive operation confirmation
-                        valread = read(sock, buffer, sizeof(buffer) - 1);
-                        if (valread <= 0)
-                            break;
-                        buffer[valread] = '\0';
-                        printf("%s", buffer);
-
-                        // 5. Receive employee menu prompt again
-                        valread = read(sock, buffer, sizeof(buffer) - 1);
-                        if (valread <= 0)
-                            break;
-                        buffer[valread] = '\0';
-                        printf("%s", buffer);
+                        printf("%s\n", feedback_accumulator);
+                        printf("End of Feedback.\n");
+                        fflush(stdout);
                     }
-                    else if (choice == 3 || choice == 4 || choice == 5)
+                    break;
+                    case 4:
                     {
-                        char buffer[4096]; // Adjust size for expected loan list info
-                        // Read full loan list and prompt from server
-                        read_full_prompt(sock, buffer, sizeof(buffer), "Enter loan ID to process or 'back' to return:");
-                        printf("%s", buffer);
+                        char buffer[1024];
+                        char input_buffer[128];
+                        int valread;
 
-                        // Get user input
-                        char input[128];
-                        if (!fgets(input, sizeof(input), stdin))
-                        {
-                            perror("Input error");
-                            break;
-                        }
-                        input[strcspn(input, "\n")] = 0; // Trim newline
-
-                        // Send loan ID or "back" to server
-                        send(sock, input, strlen(input), 0);
-
-                        // Read server response/confirmation
-                        read_full_prompt(sock, buffer, sizeof(buffer), "Employee Menu:");
-                        printf("%s", buffer);
-                    }
-                    else if (choice == 6)
-                    {
-                        // view_assigned_loan_applications input/output or menu display
-                    }
-                    else if (choice == 7)
-                    {
-                        // view_customer_transactions input/output
-                    }
-                    else if (choice == 8)
-                    { // Change Password example
-                        valread = read(sock, buffer, sizeof(buffer) - 1);
+                        // Receive prompt for username
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
                         if (valread <= 0)
                             break;
                         buffer[valread] = '\0';
                         printf("%s", buffer);
+                        fflush(stdout);
 
-                        if (fgets(input, sizeof(input), stdin) == NULL)
+                        // Get and send username
+                        if (fgets(input_buffer, sizeof(input_buffer), stdin) == NULL)
                             break;
-                        input[strcspn(input, "\n")] = 0;
-                        send(sock, input, strlen(input), 0);
+                        input_buffer[strcspn(input_buffer, "\n")] = 0;
+                        send(sock, input_buffer, strlen(input_buffer), 0);
 
-                        valread = read(sock, buffer, sizeof(buffer) - 1);
+                        // Receive prompt for new password
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
                         if (valread <= 0)
                             break;
                         buffer[valread] = '\0';
                         printf("%s", buffer);
+                        fflush(stdout);
+
+                        // Get and send new password
+                        if (fgets(input_buffer, sizeof(input_buffer), stdin) == NULL)
+                            break;
+                        input_buffer[strcspn(input_buffer, "\n")] = 0;
+                        send(sock, input_buffer, strlen(input_buffer), 0);
+
+                        // Receive and print server response
+                        valread = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                        if (valread <= 0)
+                            break;
+                        buffer[valread] = '\0';
+                        printf("%s", buffer);
+                        fflush(stdout);
                     }
-                    else if (choice == 9)
-                    { // Logout
+                    break;
+
+                    case 5:
+                        // Logout
                         printf("Logging out...\n");
                         break;
-                    }
-                    else
-                    {
-                        // For unrecognized choices, receive any message and print
-                        valread = read(sock, buffer, sizeof(buffer) - 1);
+
+                    default:
+                        valread = read(sock, buffer, 1024);
                         if (valread <= 0)
                             break;
                         buffer[valread] = '\0';
                         printf("%s", buffer);
+                        break;
                     }
                 }
             }

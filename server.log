@@ -984,3 +984,257 @@ Request: Logout
 Response: Logging out...
 
 
+[Fri Oct 31 15:08:31 2025] Client: Unknown
+Request: login|manager|Man1|man1_1234
+Response: Login successful.
+
+[Fri Oct 31 15:09:01 2025] Client: Unknown
+Request: Activate/Deactivate Customer
+Response: Customer account status updated successfully.
+
+
+[Fri Oct 31 15:09:04 2025] Client: Unknown
+Request: Logout
+Response: Logging out...
+
+
+[Fri Oct 31 15:13:59 2025] Client: Unknown
+Request: login|manager|Man1|man1_1234
+Response: Login successful.
+
+[Fri Oct 31 15:16:50 2025] Client: Unknown
+Request: login|manager|Man1|man1_1234
+Response: Login successful.
+
+[Fri Oct 31 15:21:59 2025] Client: Unknown
+Request: login|manager|Man1|man1_1234
+Response: Login successful.
+
+[Fri Oct 31 15:22:33 2025] Client: Unknown
+Request: Activate/Deactivate Customer
+Response: Customer account status updated successfully.
+
+
+[Fri Oct 31 15:22:52 2025] Client: Unknown
+Request: Activate/Deactivate Customer
+Response: Customer account status updated successfully.
+
+
+[Fri Oct 31 15:24:37 2025] Client: Unknown
+Request: login|manager|Man1|man1_1234
+Response: Login successful.
+
+[Fri Oct 31 15:25:00 2025] Client: Unknown
+Request: Activate/Deactivate Customer
+Response: Customer account status updated successfully.
+
+
+[Fri Oct 31 15:25:27 2025] Client: Unknown
+Request: Activate/Deactivate Customer
+Response: Customer account status updated successfully.
+
+
+[Fri Oct 31 15:25:37 2025] Client: Unknown
+Request: Logout
+Response: Logging out...
+
+
+[Fri Oct 31 16:03:46 2025] Client: Unknown
+Request: login|manager|Man1|man1_1234
+Response: Login successful.
+
+[Fri Oct 31 16:08:20 2025] Client: Unknown
+Request: login|manager|Man1|man1_1234
+Response: Login successful.
+
+[Fri Oct 31 16:12:14 2025] Client: Unknown
+Request: login|manager|Man1|man1_1234
+Response: Login successful.
+
+[Fri Oct 31 16:18:10 2025] Client: Unknown
+Request: login|manager|Man1|man1_1234
+Response: Login successful.
+
+[Fri Oct 31 16:20:10 2025] Client: Unknown
+Request: login|manager|Man1|man1_1234
+Response: Login successful.
+
+[Fri Oct 31 16:22:56 2025] Client: Unknown
+Request: login|manager|Man1|man1_1234
+Response: Login successful.
+
+[Fri Oct 31 16:24:15 2025] Client: Unknown
+Request: login|manager|Man1|man1_1234
+Response: Login successful.
+
+[Fri Oct 31 16:24:27 2025] Client: Unknown
+Request: Logout
+Response: Logging out...
+
+
+[Fri Oct 31 16:37:16 2025] Client: Unknown
+Request: login|manager|Man1|man1_1234
+Response: Login successful.
+
+[Fri Oct 31 16:37:27 2025] Client: Unknown
+Request: Change Password
+Response: Password changed successfully.
+
+[Fri Oct 31 16:38:41 2025] Client: Unknown
+Request: login|manager|Man1|man1_2323
+Response: Login successful.
+
+[Fri Oct 31 16:38:48 2025] Client: Unknown
+Request: Change Password
+Response: Password changed successfully.
+
+[Fri Oct 31 16:42:54 2025] Client: Unknown
+Request: login|manager|Man1|man1_1111
+Response: Login successful.
+
+[Fri Oct 31 16:43:01 2025] Client: Unknown
+Request: Change Password
+Response: Password changed successfully.
+
+[Fri Oct 31 16:52:01 2025] Client: Unknown
+Request: login|manager|Man1|man1_2222
+Response: Login successful.
+
+[Fri Oct 31 16:52:26 2025] Client: Unknown
+Request: Manager Change Password
+Response: Password changed successfully.
+
+
+[Fri Oct 31 16:52:42 2025] Client: Unknown
+Request: Manager Change Password
+Response: Password changed successfully.
+
+
+[Fri Oct 31 17:23:51 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 17:37:44 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 17:59:41 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 18:04:29 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 18:07:06 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login failed.
+
+
+[Fri Oct 31 18:08:27 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 18:09:38 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 18:16:24 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 18:17:02 2025] Client: Unknown
+Request: Modify User Details
+Response: User details updated successfully.
+
+
+[Fri Oct 31 18:20:26 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 18:20:55 2025] Client: Unknown
+Request: Modify User Details
+Response: User details updated successfully.
+
+
+[Fri Oct 31 18:31:31 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 18:32:58 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 18:36:43 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 18:37:40 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 18:42:12 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 18:44:05 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 18:50:55 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 18:52:11 2025] Client: Unknown
+Request: login|manager|Man1|man1_1000
+Response: Login successful.
+
+[Fri Oct 31 18:52:52 2025] Client: Unknown
+Request: login|manager|Man1|man1_1000
+Response: Login successful.
+
+[Fri Oct 31 19:04:39 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 19:06:20 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 19:24:04 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login failed.
+
+
+[Fri Oct 31 19:25:11 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 19:30:48 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Oct 31 19:37:47 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+

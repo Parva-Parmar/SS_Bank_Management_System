@@ -8,23 +8,9 @@
 #include <stdbool.h>
 #include <sys/socket.h>
 #include <ctype.h>
+#include "utils.h"
 
-// Trim leading and trailing whitespace in-place
-void trimm(char *str) {
-    char *end;
-    // Trim leading space
-    while (isspace((unsigned char)*str)) str++;
-
-    if (*str == 0)  // All spaces?
-        return;
-
-    // Trim trailing space
-    end = str + strlen(str) - 1;
-    while (end > str && isspace((unsigned char)*end)) end--;
-
-    // Write new null terminator
-    *(end + 1) = 0;
-}
+// now call trimm() safely, no warning
 
 static pthread_mutex_t *log_mutex_internal = NULL;
 
