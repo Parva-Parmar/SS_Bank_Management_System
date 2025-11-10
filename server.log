@@ -1276,3 +1276,870 @@ Response: Login successful.
 Request: login|admin|AdminUser|passadmin
 Response: Login successful.
 
+[Thu Nov  6 10:05:18 2025] Client: Unknown
+Request: login|customer|cust4|cust4_1111
+Response: Login failed.
+
+
+[Thu Nov  6 10:06:52 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Thu Nov  6 10:07:03 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 500.00
+
+
+[Thu Nov  6 10:07:10 2025] Client: Unknown
+Request: Deposit Money
+Response: Deposit successful.
+
+
+[Thu Nov  6 10:07:12 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 1000.00
+
+
+[Thu Nov  6 10:07:19 2025] Client: Unknown
+Request: Withdraw Money
+Response: Withdrawal successful.
+
+
+[Thu Nov  6 10:07:22 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 300.00
+
+
+[Thu Nov  6 10:17:30 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Thu Nov  6 10:17:39 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 300.00
+
+
+[Thu Nov  6 10:17:47 2025] Client: Unknown
+Request: Deposit Money
+Response: Deposit successful.
+
+
+[Thu Nov  6 10:18:12 2025] Client: Unknown
+Request: Deposit Money
+Response: Deposit successful.
+
+
+[Thu Nov  6 10:18:35 2025] Client: Unknown
+Request: Withdraw Money
+Response: Withdrawal successful.
+
+
+[Thu Nov  6 10:22:55 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Fri Nov  7 18:51:07 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Fri Nov  7 18:52:03 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 500.00
+
+
+[Fri Nov  7 18:57:11 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Fri Nov  7 18:57:15 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 500.00
+
+
+[Fri Nov  7 18:57:23 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 500.00
+
+
+[Fri Nov  7 18:57:30 2025] Client: Unknown
+Request: Deposit Money
+Response: Deposit successful.
+
+
+[Fri Nov  7 18:57:38 2025] Client: Unknown
+Request: Withdraw Money
+Response: Withdrawal successful.
+
+
+[Fri Nov  7 19:00:23 2025] Client: Unknown
+Request: login|customer|cust2|cust2_4321
+Response: Login successful.
+
+
+[Fri Nov  7 19:00:55 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 0.00
+
+
+[Fri Nov  7 19:01:49 2025] Client: Unknown
+Request: Deposit Money
+Response: Deposit successful.
+
+
+[Fri Nov  7 19:10:18 2025] Client: Unknown
+Request: login|customer|cust5|cust5_5555
+Response: Login successful.
+
+
+[Fri Nov  7 19:10:26 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 0.00
+
+
+[Fri Nov  7 19:10:33 2025] Client: Unknown
+Request: Deposit Money
+Response: Deposit successful.
+
+
+[Fri Nov  7 19:10:43 2025] Client: Unknown
+Request: Deposit Money
+Response: Deposit successful.
+
+
+[Fri Nov  7 19:10:53 2025] Client: Unknown
+Request: Withdraw Money
+Response: Withdrawal successful.
+
+
+[Fri Nov  7 19:17:09 2025] Client: Unknown
+Request: login|customer|cust5|cust5_5555
+Response: Login successful.
+
+
+[Fri Nov  7 19:17:27 2025] Client: Unknown
+Request: Deposit Money
+Response: Deposit successful.
+
+
+[Fri Nov  7 19:18:18 2025] Client: Unknown
+Request: Withdraw Money
+Response: Withdrawal successful.
+
+
+[Fri Nov  7 19:20:38 2025] Client: Unknown
+Request: Transfer Funds
+Response: Transfer successful.
+
+
+[Fri Nov  7 19:21:24 2025] Client: Unknown
+Request: Transfer Funds
+Response: Transfer successful.
+
+
+[Fri Nov  7 19:49:59 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Fri Nov  7 19:51:28 2025] Client: Unknown
+Request: Transfer Funds
+Response: Transfer successful.
+
+
+[Fri Nov  7 20:09:50 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Fri Nov  7 20:10:39 2025] Client: Unknown
+Request: Transfer Funds
+Response: Transfer successful.
+
+
+[Fri Nov  7 20:12:45 2025] Client: Unknown
+Request: Transfer Funds
+Response: Transfer successful.
+
+
+[Fri Nov  7 20:16:49 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Fri Nov  7 20:17:05 2025] Client: Unknown
+Request: Transfer Funds
+Response: Transfer successful.
+
+
+[Fri Nov  7 20:28:09 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Fri Nov  7 20:28:18 2025] Client: Unknown
+Request: Apply for Loan
+Response: Loan application submitted.
+
+
+[Fri Nov  7 20:32:48 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Fri Nov  7 20:32:57 2025] Client: Unknown
+Request: Apply for Loan
+Response: Loan application submitted.
+
+
+[Fri Nov  7 20:33:44 2025] Client: Unknown
+Request: Add Feedback
+Response: Thank you for your feedback.
+
+
+[Fri Nov  7 20:35:34 2025] Client: Unknown
+Request: Change Password
+Response: Password changed successfully.
+
+
+[Fri Nov  7 20:35:43 2025] Client: Unknown
+Request: Change Password
+Response: Password changed successfully.
+
+
+[Fri Nov  7 20:54:07 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Fri Nov  7 20:54:09 2025] Client: Unknown
+Request: View Transaction History
+Response: History sent
+
+[Fri Nov  7 20:54:13 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 400.00
+
+
+[Fri Nov  7 20:54:36 2025] Client: Unknown
+Request: View Transaction History
+Response: History sent
+
+[Fri Nov  7 20:54:37 2025] Client: Unknown
+Request: View Transaction History
+Response: History sent
+
+[Fri Nov  7 20:54:38 2025] Client: Unknown
+Request: View Transaction History
+Response: History sent
+
+[Fri Nov  7 20:54:47 2025] Client: Unknown
+Request: Deposit Money
+Response: Deposit successful.
+
+
+[Fri Nov  7 20:54:54 2025] Client: Unknown
+Request: Withdraw Money
+Response: Withdrawal successful.
+
+
+[Fri Nov  7 20:54:56 2025] Client: Unknown
+Request: View Transaction History
+Response: History sent
+
+[Fri Nov  7 20:54:59 2025] Client: Unknown
+Request: View Transaction History
+Response: History sent
+
+[Fri Nov  7 21:07:17 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Fri Nov  7 21:07:34 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1111
+Response: Login failed.
+
+
+[Fri Nov  7 21:20:06 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1111
+Response: Login failed.
+
+
+[Fri Nov  7 21:26:13 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1111
+Response: Login failed.
+
+
+[Fri Nov  7 21:31:21 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1111
+Response: Login failed.
+
+
+[Fri Nov  7 21:32:41 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Fri Nov  7 21:32:43 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 400.00
+
+
+[Fri Nov  7 21:32:46 2025] Client: Unknown
+Request: View Transaction History
+Response: History sent
+
+[Fri Nov  7 21:32:46 2025] Client: Unknown
+Request: View Transaction History
+Response: History sent
+
+[Fri Nov  7 21:32:47 2025] Client: Unknown
+Request: View Transaction History
+Response: History sent
+
+[Fri Nov  7 21:32:52 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 400.00
+
+
+[Fri Nov  7 21:33:16 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Fri Nov  7 21:33:22 2025] Client: Unknown
+Request: View Transaction History
+Response: History sent
+
+[Fri Nov  7 21:43:48 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1111
+Response: Login failed.
+
+
+[Fri Nov  7 21:54:57 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1111
+Response: Login failed.
+
+
+[Fri Nov  7 21:56:20 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1111
+Response: Login failed.
+
+
+[Fri Nov  7 21:57:19 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1111
+Response: Login failed.
+
+
+[Fri Nov  7 21:59:58 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1111
+Response: Login failed.
+
+
+[Fri Nov  7 22:01:12 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1111
+Response: Login failed.
+
+
+[Fri Nov  7 22:08:06 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1111
+Response: Login failed.
+
+
+[Fri Nov  7 23:27:16 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Nov  7 23:29:20 2025] Client: Unknown
+Request: login|employee|emp1|emp1_3333
+Response: Login failed.
+
+
+[Fri Nov  7 23:30:12 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Nov  7 23:30:37 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Nov  7 23:33:49 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Nov  7 23:43:35 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Fri Nov  7 23:53:31 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 00:23:57 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 00:41:26 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 00:53:11 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 00:58:44 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 00:59:35 2025] Client: Unknown
+Request: Modify User Details
+Response: User details updated successfully.
+
+
+[Sat Nov  8 01:04:43 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 01:05:36 2025] Client: Unknown
+Request: Modify User Details
+Response: User details updated successfully.
+
+
+[Sat Nov  8 01:06:01 2025] Client: Unknown
+Request: Modify User Details
+Response: User details updated successfully.
+
+
+[Sat Nov  8 01:22:41 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 01:28:05 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 01:29:10 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 01:33:17 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 01:37:25 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 01:44:16 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 01:48:31 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 09:16:35 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Sat Nov  8 09:16:44 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 400.00
+
+
+[Sat Nov  8 09:16:51 2025] Client: Unknown
+Request: View Transaction History
+Response: History sent
+
+[Sat Nov  8 09:16:55 2025] Client: Unknown
+Request: View Transaction History
+Response: History sent
+
+[Sat Nov  8 09:20:31 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 09:29:42 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 09:31:09 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 09:46:22 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 10:01:08 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 10:04:16 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 10:05:30 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 10:06:05 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 10:07:52 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 10:10:48 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 10:25:43 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 10:26:01 2025] Client: Unknown
+Request: Reject Loan
+Response: Loan rejected successfully.
+
+
+[Sat Nov  8 10:26:53 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 10:27:39 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 10:33:00 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 10:34:19 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 10:35:26 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 10:36:44 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 10:41:33 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 10:44:03 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 10:45:39 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 10:48:24 2025] Client: Unknown
+Request: Reject Loan
+Response: Loan rejected successfully.
+
+
+[Sat Nov  8 10:54:13 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 10:55:41 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 11:01:46 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 11:03:48 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 11:05:31 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 11:05:54 2025] Client: Unknown
+Request: Reject Loan
+Response: Loan rejected successfully.
+
+
+[Sat Nov  8 11:07:26 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 11:07:46 2025] Client: Unknown
+Request: Reject Loan
+Response: Loan already approved, cannot reject.
+
+
+[Sat Nov  8 11:15:32 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 11:15:46 2025] Client: Unknown
+Request: Reject Loan
+Response: Loan already approved, cannot reject.
+
+
+[Sat Nov  8 11:16:52 2025] Client: Unknown
+Request: Modify User Details
+Response: User details updated successfully.
+
+
+[Sat Nov  8 11:35:53 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 11:37:08 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 11:37:25 2025] Client: Unknown
+Request: Approve Loan
+Response: Loan approved successfully.
+
+
+[Sat Nov  8 11:39:35 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 11:40:47 2025] Client: Unknown
+Request: Approve Loan
+Response: Loan approved successfully.
+
+
+[Sat Nov  8 11:49:23 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 11:49:37 2025] Client: Unknown
+Request: View Customer Transactions
+Response: History sent
+
+[Sat Nov  8 11:50:10 2025] Client: Unknown
+Request: View Customer Transactions
+Response: History sent
+
+[Sat Nov  8 11:53:01 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 11:58:14 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 11:59:46 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 12:09:02 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_3333
+Response: Login successful.
+
+
+[Sat Nov  8 12:09:10 2025] Client: Unknown
+Request: Change Password
+Response: Password changed successfully.
+
+
+[Sat Nov  8 12:10:10 2025] Client: Unknown
+Request: login|manager|Man1|man1_1000
+Response: Login successful.
+
+[Sat Nov  8 12:10:49 2025] Client: Unknown
+Request: Activate/Deactivate Customer
+Response: Customer account status updated successfully.
+
+
+[Sat Nov  8 12:11:03 2025] Client: Unknown
+Request: Activate/Deactivate Customer
+Response: Customer account status updated successfully.
+
+
+[Sat Nov  8 12:15:00 2025] Client: Unknown
+Request: login|manager|Man1|man1_1000
+Response: Login successful.
+
+[Sat Nov  8 12:31:56 2025] Client: Unknown
+Request: login|manager|Man1|man1_1000
+Response: Login successful.
+
+[Sat Nov  8 12:33:38 2025] Client: Unknown
+Request: login|manager|Man1|man1_1000
+Response: Login successful.
+
+[Sat Nov  8 12:36:06 2025] Client: Unknown
+Request: login|manager|Man1|man1_1000
+Response: Login successful.
+
+[Sat Nov  8 12:37:12 2025] Client: Unknown
+Request: login|manager|Man1|man1_1001
+Response: Login failed.
+
+
+[Sat Nov  8 12:37:28 2025] Client: Unknown
+Request: login|manager|Man1|man1_1000
+Response: Login successful.
+
+[Sat Nov  8 12:46:17 2025] Client: Unknown
+Request: login|manager|Man1|man1_1000
+Response: Login successful.
+
+[Sat Nov  8 12:46:55 2025] Client: Unknown
+Request: Manager Change Password
+Response: Password changed successfully.
+
+
+[Sat Nov  8 12:51:15 2025] Client: Unknown
+Request: login|manager|Man1|man1_1234
+Response: Login successful.
+
+[Sat Nov  8 16:30:14 2025] Client: Unknown
+Request: login|admin|AdminUser|passadmin
+Response: Login successful.
+
+[Sat Nov  8 16:30:50 2025] Client: Unknown
+Request: Add New Employee
+Response: New employee added successfully.
+
+
+[Sat Nov  8 16:31:33 2025] Client: Unknown
+Request: Manage User Roles
+Response: User not found.
+
+
+[Sat Nov  8 16:33:57 2025] Client: Unknown
+Request: login|admin|AdminUser|passadmin
+Response: Login successful.
+
+[Sat Nov  8 16:34:49 2025] Client: Unknown
+Request: Manage User Roles
+Response: User not found.
+
+
+[Sat Nov  8 16:36:12 2025] Client: Unknown
+Request: login|customer|cust1|cust1_1234
+Response: Login successful.
+
+
+[Sat Nov  8 16:36:13 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 600.00
+
+
+[Sat Nov  8 16:36:24 2025] Client: Unknown
+Request: Deposit Money
+Response: Deposit successful.
+
+
+[Sat Nov  8 16:36:27 2025] Client: Unknown
+Request: View Account Balance
+Response: Your account balance is: 750.00
+
+
+[Sat Nov  8 16:36:32 2025] Client: Unknown
+Request: Withdraw Money
+Response: Withdrawal successful.
+
+
+[Sat Nov  8 16:36:37 2025] Client: Unknown
+Request: View Transaction History
+Response: History sent
+
+[Sat Nov  8 16:38:06 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Sat Nov  8 16:39:01 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Sat Nov  8 16:40:05 2025] Client: Unknown
+Request: login|employee|Emp1|emp1_1234
+Response: Login successful.
+
+
+[Sat Nov  8 16:40:16 2025] Client: Unknown
+Request: View Customer Transactions
+Response: History sent
+
+[Sat Nov  8 16:40:30 2025] Client: Unknown
+Request: View Customer Transactions
+Response: History sent
+
+[Sat Nov  8 17:37:22 2025] Client: Unknown
+Request: login|admin|AdminUser|passadmin
+Response: Login successful.
+
+[Sat Nov  8 17:37:35 2025] Client: Unknown
+Request: Manage User Roles
+Response: Cannot change roles now: active loans exist.
+
+

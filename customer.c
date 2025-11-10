@@ -7,7 +7,7 @@
 #include <fcntl.h>
 #include <sys/file.h>
 #include <time.h>
-
+#include "filelock.h"
 #define USERS_FILE "users.txt"
 #define CUSTOMER_DATA_FILE "customer_data.txt"
 #define TRANSACTIONS_FILE "transactions.txt"
@@ -42,16 +42,7 @@ static void close_file_locked(FILE *fp, int fd) {
     fclose(fp);
 }
 
-void log_transaction_from_account(const char *account, const char *type, float amount, const char *to_account) {
-    // Implement file logging here
-}
-
-void log_transaction_to_account(const char *account, const char *type, float amount, const char *from_account) {
-    // Implement file logging here
-}
-
-
-void log_transaction(const char *username, const char *type, float amount, const char *remarks) {
+void log_transaction(const char *accountnumber, const char *type, float amount, const char *remarks) {
     int fd;
     FILE *fp = open_file_locked(TRANSACTIONS_FILE, "a", &fd);
     if (!fp)
@@ -59,7 +50,7 @@ void log_transaction(const char *username, const char *type, float amount, const
     time_t now = time(NULL);
     char *dt = ctime(&now);
     dt[strlen(dt) - 1] = '\0';
-    fprintf(fp, "%s|%s|%.2f|%s|%s\n", username, type, amount, dt, remarks);
+    fprintf(fp, "%s|%s|%.2f|%s|%s\n", accountnumber, type, amount, dt, remarks);
     close_file_locked(fp, fd);
 }
 
@@ -79,13 +70,37 @@ bool validate_customer_login(const char *username, const char *password) {
         if (strcmp(role, "customer") == 0 &&
             strcmp(username, file_user) == 0 &&
             strcmp(password, file_pass) == 0) {
-            valid = true;
-            break;
+            
+            // Password and username matched for customer role, now check status
+            fclose(fp);
+
+            // Open customer_data.txt to check status
+            FILE *cfp = fopen("customer_data.txt", "r");
+            if (!cfp)
+                return false;
+
+            char cline[256];
+            while (fgets(cline, sizeof(cline), cfp)) {
+                char cusername[64], accountnumber[32], mobilenumber[32], balance[32], status[32];
+                sscanf(cline, "%63[^|]|%31[^|]|%31[^|]|%31[^|]|%31[^\n]", cusername, accountnumber, mobilenumber, balance, status);
+                trim(cusername);
+                trim(status);
+                if (strcmp(username, cusername) == 0) {
+                    fclose(cfp);
+                    if (strcmp(status, "Active") == 0)
+                        return true;  // Login allowed only if Active
+                    else
+                        return false; // Status not active
+                }
+            }
+            fclose(cfp);
+            return false; // Username not found in customer_data.txt
         }
     }
     fclose(fp);
-    return valid;
+    return false; // Username/password/role didn't match
 }
+
 
 bool customer_exists(const char *username) {
     FILE *fp = fopen(USERS_FILE, "r");
@@ -128,8 +143,10 @@ bool add_customer(const char *username, const char *password) {
 
 float get_account_balance(const char *username) {
     FILE *fp = fopen(CUSTOMER_DATA_FILE, "r");
-    if (!fp)
-        return -1.0f;
+    if (!fp) {
+        perror("Failed to open customer data file");
+        return -1.0f;  // Indicate failure
+    }
 
     char line[256];
     float balance = -1.0f;
@@ -137,12 +154,20 @@ float get_account_balance(const char *username) {
     while (fgets(line, sizeof(line), fp)) {
         char user[64], accountnumber[32], mobile[32], status[32];
         float bal;
-        // Parse according to your file format
-        sscanf(line, "%63[^|]|%31[^|]|%31[^|]|%f|%31[^|\n]", user, accountnumber, mobile, &bal, status);
-        trim(user);
-        if (strcmp(username, user) == 0) {
-            balance = bal;
-            break;
+
+        int parsed = sscanf(line, "%63[^|]|%31[^|]|%31[^|]|%f|%31[^\n]", user, accountnumber, mobile, &bal, status);
+        if (parsed == 5) {
+            trim(user);
+            trim(status);
+
+            if (strcmp(username, user) == 0) {
+                if (strcmp(status, "Active") == 0) {
+                    balance = bal;
+                } else {
+                    balance = -2.0f;  // Indicate inactive account with special code
+                }
+                break;
+            }
         }
     }
 
@@ -150,76 +175,130 @@ float get_account_balance(const char *username) {
     return balance;
 }
 
+
 bool deposit_money(const char *username, float amount) {
     if (amount <= 0) {
         return false;
     }
+
     int fd;
-    FILE *fp = open_file_locked(CUSTOMER_DATA_FILE, "r+", &fd);
+    FILE *fp = open_file_locked(CUSTOMER_DATA_FILE, "r", &fd);
     if (!fp) {
+        perror("Failed to open and lock customer data file for reading");
         return false;
     }
-    char line[256];
-    long pos = 0;
+
+    char lines[1000][256];  // Adjust max lines if needed
+    int count = 0;
     bool updated = false;
-    while (fgets(line, sizeof(line), fp)) {
-        char user[64], accountnumber[32], mobilenumber[32], status[32];
-        float balance;
-        sscanf(line, "%63[^|]|%31[^|]|%31[^|]|%f|%31[^\n]", user, accountnumber, mobilenumber, &balance, status);
-        trim(user);
-        if (strcmp(user, username) == 0) {
-            balance += amount;
-            fseek(fp, pos, SEEK_SET);
-            fprintf(fp, "%s|%s|%s|%.2f|%s\n", user, accountnumber, mobilenumber, balance, status);
-            fflush(fp);
-            updated = true;
-            close_file_locked(fp, fd);
-            log_transaction(username, "Deposit", amount, "Deposit to account");
-            return true;
-        }
-        pos = ftell(fp);
+    int i;  // Declare here for use after loop
+
+    // Read all lines to memory
+    while (fgets(lines[count], sizeof(lines[count]), fp) && count < 1000) {
+        count++;
     }
     close_file_locked(fp, fd);
-    return updated;
+
+    // Update balance in memory
+    for (i = 0; i < count; i++) {
+        char user[64], accountnumber[32], mobilenumber[32], status[32];
+        float balance;
+        int parsed = sscanf(lines[i], "%63[^|]|%31[^|]|%31[^|]|%f|%31[^\n]", user, accountnumber, mobilenumber, &balance, status);
+        if (parsed == 5) {
+            trim(user);
+            trim(status);
+            if (strcmp(user, username) == 0) {
+                balance += amount;
+                snprintf(lines[i], sizeof(lines[i]), "%s|%s|%s|%.2f|%s\n", user, accountnumber, mobilenumber, balance, status);
+                updated = true;
+                break;
+            }
+        }
+    }
+
+    if (!updated) {
+        // User not found
+        return false;
+    }
+
+    // Open file again for writing with locking
+    fp = open_file_locked(CUSTOMER_DATA_FILE, "w", &fd);
+    if (!fp) {
+        perror("Failed to open and lock customer data file for writing");
+        return false;
+    }
+
+    // Write updated data
+    for (int j = 0; j < count; j++) {
+        fputs(lines[j], fp);
+    }
+    close_file_locked(fp, fd);
+
+    // Extract account number from updated line for logging
+    char accountnumber[32] = {0};
+    sscanf(lines[i], "%*[^|]|%31[^|]", accountnumber);
+    log_transaction(accountnumber, "Deposit", amount, "Deposit to account");
+
+    return true;
 }
+
+
 
 
 bool withdraw_money(const char *username, float amount) {
     if (amount <= 0) return false;
 
-    int fd;
-    FILE *fp = open_file_locked(CUSTOMER_DATA_FILE, "r+", &fd);
+    FILE *fp = fopen(CUSTOMER_DATA_FILE, "r");
     if (!fp) return false;
 
-    char line[256];
-    long pos = 0;
+    // Buffer for lines and updated content
+    char lines[1000][512];  // assume max 1000 lines and max line length 512
+    int count = 0;
+    char acno[32];
     bool updated = false;
 
-    while (fgets(line, sizeof(line), fp)) {
+    // Read all lines into memory
+    while (fgets(lines[count], sizeof(lines[count]), fp) && count < 1000) {
+        count++;
+    }
+    fclose(fp);
+
+    // Modify the line in memory
+    for (int i = 0; i < count; i++) {
         char user[64], accountnumber[32], mobilenumber[32], status[32];
         float balance;
-        sscanf(line, "%63[^|]|%31[^|]|%31[^|]|%f|%31[^\n]", user, accountnumber, mobilenumber, &balance, status);
+        sscanf(lines[i], "%63[^|]|%31[^|]|%31[^|]|%f|%31[^\n]", user, accountnumber, mobilenumber, &balance, status);
         trim(user);
+        trim(status);
+
         if (strcmp(user, username) == 0) {
             if (balance >= amount) {
                 balance -= amount;
-                fseek(fp, pos, SEEK_SET);
-                fprintf(fp, "%s|%s|%s|%.2f|%s\n", user, accountnumber, mobilenumber, balance, status);
-                fflush(fp);
+                snprintf(lines[i], sizeof(lines[i]), "%s|%s|%s|%.2f|%s\n", user, accountnumber, mobilenumber, balance, status);
+                strcpy(acno, accountnumber);
                 updated = true;
-                close_file_locked(fp, fd);
-                log_transaction(username, "Withdraw", amount, "Withdrawal from account");
-                return true;
+                break;
             } else {
-                close_file_locked(fp, fd);
                 return false; // insufficient balance
             }
         }
-        pos = ftell(fp);
     }
-    close_file_locked(fp, fd);
-    return false; // user not found or no sufficient balance
+
+    if (!updated) return false; // user not found or no sufficient balance
+
+    // Write back all lines to file
+    fp = fopen(CUSTOMER_DATA_FILE, "w");
+    if (!fp) return false;
+
+    for (int i = 0; i < count; i++) {
+        fputs(lines[i], fp);
+    }
+    fclose(fp);
+
+    log_transaction(acno, "Withdraw", amount, "Withdrawal from account");
+    return true;
 }
+
 
 void log_transfer_transaction(const char *sender_account, float amount, const char *receiver_account) {
     FILE *fp = fopen("transactions.txt", "a");
@@ -336,9 +415,14 @@ bool transfer_funds(const char *from_account, const char *to_user, float amount)
 bool apply_for_loan(const char *username, float loan_amount) {
     if (loan_amount <= 0) return false;
 
-    // Open customer data to get account number of user
+    // Open customer data file with read lock
     FILE *fp_cust = fopen(CUSTOMER_DATA_FILE, "r");
     if (!fp_cust) return false;
+    int fd_cust = fileno(fp_cust);
+    if (lock_file(fd_cust, F_RDLCK) != 0) {
+        fclose(fp_cust);
+        return false;
+    }
 
     char line[256];
     char accountnumber[32] = {0};
@@ -355,27 +439,47 @@ bool apply_for_loan(const char *username, float loan_amount) {
             break;
         }
     }
+    unlock_file(fd_cust);
     fclose(fp_cust);
 
     if (!found) return false;
 
-    // Append new loan entry in loans.txt
+    // Open loans.txt for reading to find max existing loan id
+    FILE *fp_loans_read = fopen("loans.txt", "r");
+    int max_loan_id = 1000; // Starting baseline
+    if (fp_loans_read) {
+        char loan_line[256];
+        while (fgets(loan_line, sizeof(loan_line), fp_loans_read)) {
+            int loan_id;
+            // Loan file format: loanid|accountnumber|amount|status|employeeid
+            if (sscanf(loan_line, "%d|%*[^|]|%*f|%*[^|]|%*s", &loan_id) == 1) {
+                if (loan_id > max_loan_id) max_loan_id = loan_id;
+            }
+        }
+        fclose(fp_loans_read);
+    }
+    max_loan_id++; // Next loan ID to use
+
+    // Open loans.txt for append with write lock
     FILE *fp_loans = fopen("loans.txt", "a");
     if (!fp_loans) return false;
+    int fd_loans = fileno(fp_loans);
+    if (lock_file(fd_loans, F_WRLCK) != 0) {
+        fclose(fp_loans);
+        return false;
+    }
 
-    // Generate new loan id, for example you can implement increment logic, here simplified:
-    static int loan_id_counter = 1000; // maintain this globally or load from file on startup
-    loan_id_counter++;
+    // Write the new loan entry
+    fprintf(fp_loans, "%d|%s|%.2f|In Progress|U000000\n", max_loan_id, accountnumber, loan_amount);
 
-    // Write loan entry: loanid|accountnumber|amount|status|employeeid
-    fprintf(fp_loans, "%d|%s|%.2f|In Progress|U000000\n", loan_id_counter, accountnumber, loan_amount);
+    fflush(fp_loans);
+    unlock_file(fd_loans);
     fclose(fp_loans);
 
-    log_transaction(username, "Loan Application", loan_amount, "Loan requested");
+    log_transaction(accountnumber, "Loan Application", loan_amount, "Loan requested");
 
     return true;
 }
-
 
 bool customer_change_password(const char *username, const char *new_password) {
     int fd;
@@ -426,29 +530,37 @@ bool add_feedback(const char *username, const char *feedback) {
 }
 
 bool transfer_funds_with_account(const char *from_account, const char *to_account, float amount) {
-    if (amount <= 0) return false;
+    if (amount <= 0)
+        return false;
 
     int fd;
     FILE *fp = open_file_locked(CUSTOMER_DATA_FILE, "r+", &fd);
-    if (!fp) return false;
+    if (!fp)
+        return false;
 
     char lines[100][256];
     int count = 0;
 
+    // Read all lines into memory
     while (fgets(lines[count], sizeof(lines[count]), fp)) {
         count++;
         if (count >= 100) break; // safety limit
     }
 
     int sender_idx = -1, receiver_idx = -1;
-    float sender_balance = 0.0f, receiver_balance = 0.0f;
-    char user[64], accountnum[32], mobilenumber[32], status[32];
 
+    // Find indices of sender and receiver
     for (int i = 0; i < count; i++) {
-        sscanf(lines[i], "%63[^|]|%31[^|]|%31[^|]|%f|%31[^\n]", user, accountnum, mobilenumber, &sender_balance, status);
+        char user[64], accountnum[32], mobilenumber[32], status[32];
+        float balance;
+        int parsed = sscanf(lines[i], "%63[^|]|%31[^|]|%31[^|]|%f|%31[^\n]", user, accountnum, mobilenumber, &balance, status);
         trim(accountnum);
-        if (strcmp(accountnum, from_account) == 0) sender_idx = i;
-        if (strcmp(accountnum, to_account) == 0) receiver_idx = i;
+        if (parsed == 5) {
+            if (strcmp(accountnum, from_account) == 0)
+                sender_idx = i;
+            if (strcmp(accountnum, to_account) == 0)
+                receiver_idx = i;
+        }
     }
 
     if (sender_idx == -1 || receiver_idx == -1) {
@@ -456,20 +568,37 @@ bool transfer_funds_with_account(const char *from_account, const char *to_accoun
         return false;
     }
 
-    sscanf(lines[sender_idx], "%63[^|]|%31[^|]|%31[^|]|%f|%31[^\n]", user, accountnum, mobilenumber, &sender_balance, status);
-    sscanf(lines[receiver_idx], "%63[^|]|%31[^|]|%31[^|]|%f|%31[^\n]", user, accountnum, mobilenumber, &receiver_balance, status);
+    // Separate buffers for sender and receiver data
+    char sender_user[64], sender_accountnum[32], sender_mobilenumber[32], sender_status[32];
+    float sender_balance = 0.0f;
+
+    char receiver_user[64], receiver_accountnum[32], receiver_mobilenumber[32], receiver_status[32];
+    float receiver_balance = 0.0f;
+
+    sscanf(lines[sender_idx], "%63[^|]|%31[^|]|%31[^|]|%f|%31[^\n]",
+           sender_user, sender_accountnum, sender_mobilenumber, &sender_balance, sender_status);
+
+    sscanf(lines[receiver_idx], "%63[^|]|%31[^|]|%31[^|]|%f|%31[^\n]",
+           receiver_user, receiver_accountnum, receiver_mobilenumber, &receiver_balance, receiver_status);
 
     if (sender_balance < amount) {
         close_file_locked(fp, fd);
         return false;
     }
 
+    // Update balances
     sender_balance -= amount;
     receiver_balance += amount;
 
-    snprintf(lines[sender_idx], sizeof(lines[sender_idx]), "%s|%s|%s|%.2f|%s\n", user, from_account, mobilenumber, sender_balance, status);
-    snprintf(lines[receiver_idx], sizeof(lines[receiver_idx]), "%s|%s|%s|%.2f|%s\n", user, to_account, mobilenumber, receiver_balance, status);
+    // Update sender line
+    snprintf(lines[sender_idx], sizeof(lines[sender_idx]), "%s|%s|%s|%.2f|%s\n",
+             sender_user, from_account, sender_mobilenumber, sender_balance, sender_status);
 
+    // Update receiver line
+    snprintf(lines[receiver_idx], sizeof(lines[receiver_idx]), "%s|%s|%s|%.2f|%s\n",
+             receiver_user, to_account, receiver_mobilenumber, receiver_balance, receiver_status);
+
+    // Write all lines back to file
     fseek(fp, 0, SEEK_SET);
     for (int i = 0; i < count; i++) {
         fputs(lines[i], fp);
@@ -479,43 +608,74 @@ bool transfer_funds_with_account(const char *from_account, const char *to_accoun
 
     close_file_locked(fp, fd);
 
+    log_transaction(from_account, "Transfer", amount, to_account);
     return true;
 }
+
 
 bool get_transaction_history(const char *username, char *output_buffer, size_t buf_size) {
     if (!username || !output_buffer) return false;
 
-    FILE *fp = fopen("transactions.log", "r");
-    if (!fp) return false;
+    // Open customer data file with shared read lock
+    FILE *fp_cust = fopen(CUSTOMER_DATA_FILE, "r");
+    if (!fp_cust) return false;
+    int fd_cust = fileno(fp_cust);
+    if (lock_file(fd_cust, F_RDLCK) != 0) {
+        fclose(fp_cust);
+        return false;
+    }
+
+    char line[256];
+    char file_user[64], accountnumber[32] = {0}, mobile[32], status[32];
+    float balance;
+    bool found = false;
+
+    // Find accountnumber for username
+    while (fgets(line, sizeof(line), fp_cust)) {
+        int parsed = sscanf(line, "%63[^|]|%31[^|]|%31[^|]|%f|%31[^\n]", file_user, accountnumber, mobile, &balance, status);
+        if (parsed == 5) {
+            trim(file_user);
+            if (strcmp(file_user, username) == 0) {
+                found = true;
+                break;
+            }
+        }
+    }
+
+    unlock_file(fd_cust);
+    fclose(fp_cust);
+
+    if (!found) return false;
+
+    // Open transactions.txt with shared read lock
+    FILE *fp_tx = fopen("transactions.txt", "r");
+    if (!fp_tx) return false;
+    int fd_tx = fileno(fp_tx);
+    if (lock_file(fd_tx, F_RDLCK) != 0) {
+        fclose(fp_tx);
+        return false;
+    }
 
     output_buffer[0] = '\0';
+    char tx_line[512], acc_in_tx[64];
 
-    char line[512];
-    char user_in_line[128];
-
-    while (fgets(line, sizeof(line), fp)) {
-        // Extract username from line (assuming format: username|transaction_type|amount|date|desc)
-        if (sscanf(line, "%127[^|]|", user_in_line) == 1) {
-            // Trim newline/whitespace
-            for (int i = 0; user_in_line[i]; i++) {
-                if (user_in_line[i] == '\n' || user_in_line[i] == '\r') {
-                    user_in_line[i] = '\0';
-                    break;
-                }
-            }
-            if (strcmp(user_in_line, username) == 0) {
-                // Append line safely to output_buffer
-                if ((strlen(output_buffer) + strlen(line) + 1) < buf_size) {
-                    strcat(output_buffer, line);
+    // Read lines matching accountnumber
+    while (fgets(tx_line, sizeof(tx_line), fp_tx)) {
+        if (sscanf(tx_line, "%63[^|]|", acc_in_tx) == 1) {
+            trim(acc_in_tx);
+            if (strcmp(acc_in_tx, accountnumber) == 0) {
+                if ((strlen(output_buffer) + strlen(tx_line) + 1) < buf_size) {
+                    strcat(output_buffer, tx_line);
                 } else {
-                    // Buffer full; stop reading more
-                    break;
+                    break;  // buffer full
                 }
             }
         }
     }
 
-    fclose(fp);
+    unlock_file(fd_tx);
+    fclose(fp_tx);
+
     return (strlen(output_buffer) > 0);
 }
 

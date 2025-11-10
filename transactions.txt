@@ -20,3 +20,28 @@ Parva|Password Change|0.00|Wed Oct 29 15:59:37 2025|Changed password
 Dholu|Deposit|500.00|Thu Oct 30 00:20:10 2025|Deposit to account
 Dholu|Deposit|333.00|Thu Oct 30 00:20:19 2025|Deposit to account
 cust1|Deposit|500.00|Fri Oct 31 19:56:40 2025|Deposit to account
+cust1|Deposit|500.00|Thu Nov  6 10:07:10 2025|Deposit to account
+cust1|Withdraw|700.00|Thu Nov  6 10:07:19 2025|Withdrawal from account
+1000000|Deposit|500.00|Thu Nov  6 10:17:47 2025|Deposit to account
+1000000|Deposit|200.00|Thu Nov  6 10:18:12 2025|Deposit to account
+cust1|Withdraw|500.00|Thu Nov  6 10:18:35 2025|Withdrawal from account
+1000000|Deposit|250.00|Fri Nov  7 18:57:30 2025|Deposit to account
+cust1|Withdraw|250.00|Fri Nov  7 18:57:38 2025|Withdrawal from account
+1000001|Deposit|1000.00|Fri Nov  7 19:01:49 2025|Deposit to account
+1000005|Deposit|500.00|Fri Nov  7 19:10:33 2025|Deposit to account
+1000005|Deposit|450.00|Fri Nov  7 19:10:43 2025|Deposit to account
+cust5|Withdraw|900.00|Fri Nov  7 19:10:53 2025|Withdrawal from account
+1000005|Deposit|500.00|Fri Nov  7 19:17:27 2025|Deposit to account
+1000005|Withdraw|300.00|Fri Nov  7 19:18:18 2025|Withdrawal from account
+1000000|Transfer|100.00|Fri Nov  7 19:51:28 2025|1000005
+1000000|Transfer|250.00|Fri Nov  7 20:10:39 2025|1000006
+1000000|Transfer|200.00|Fri Nov  7 20:12:45 2025|1000006
+1000000|Transfer|100.00|Fri Nov  7 20:17:05 2025|1000006
+1000000|Loan Application|5000.00|Fri Nov  7 20:28:18 2025|Loan requested
+1000000|Loan Application|200.00|Fri Nov  7 20:32:57 2025|Loan requested
+cust1|Password Change|0.00|Fri Nov  7 20:35:34 2025|Changed password
+cust1|Password Change|0.00|Fri Nov  7 20:35:43 2025|Changed password
+1000000|Deposit|500.00|Fri Nov  7 20:54:47 2025|Deposit to account
+1000000|Withdraw|500.00|Fri Nov  7 20:54:54 2025|Withdrawal from account
+1000000|Deposit|150.00|Sat Nov  8 16:36:24 2025|Deposit to account
+1000000|Withdraw|20.00|Sat Nov  8 16:36:32 2025|Withdrawal from account

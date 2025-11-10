@@ -288,3 +288,35 @@ bool change_password(const char *username, const char *new_password) {
 void manager_logout(void) {
     // To be implemented
 }
+
+bool get_all_feedback(char *output_buffer, size_t buf_size) {
+    if (!output_buffer) return false;
+
+    FILE *fp = fopen("feedback.txt", "r");
+    if (!fp) return false;
+
+    int fd = fileno(fp);
+    if (lock_file(fd, F_RDLCK) != 0) {
+        fclose(fp);
+        return false;
+    }
+
+    output_buffer[0] = '\0';
+    char line[512];
+
+    // Read the feedback file line by line
+    while (fgets(line, sizeof(line), fp)) {
+        size_t needed_len = strlen(output_buffer) + strlen(line) + 1;
+        if (needed_len < buf_size) {
+            strcat(output_buffer, line);
+        } else {
+            // Buffer full, stop reading
+            break;
+        }
+    }
+
+    unlock_file(fd);
+    fclose(fp);
+
+    return (strlen(output_buffer) > 0);
+}
